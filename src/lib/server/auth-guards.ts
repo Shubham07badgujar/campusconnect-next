@@ -35,13 +35,40 @@ const getBearerToken = (req: NextRequest): string => {
   return authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
 };
 
-const verifyToken = async (req: NextRequest): Promise<DecodedToken | null> => {
+const SERVICE_UNAVAILABLE_MESSAGE =
+  "Authentication service is temporarily unavailable. Please try again shortly.";
+
+// Distinguishes a genuinely bad credential (verifyIdToken rejected the token)
+// from the Admin SDK being unavailable. A rejected token carries a Firebase
+// `auth/*` error code; an initialization failure (e.g. a missing
+// FIREBASE_SERVICE_ACCOUNT_BASE64 on the host) throws a plain Error from our
+// lazy loader with no code, or an `app/*` code — neither starts with "auth/".
+const isInvalidTokenError = (err: unknown): boolean => {
+  const source = err as { code?: unknown; errorInfo?: { code?: unknown } } | null;
+  const code = source?.code ?? source?.errorInfo?.code;
+  return typeof code === "string" && code.startsWith("auth/");
+};
+
+// Verifies the Bearer token and returns the decoded claims, or a ready-to-send
+// GuardFailure that names the real problem: a missing token (401), a bad/expired
+// token (401), or the Admin SDK being unreachable (503) — the last of which used
+// to masquerade as "No authorization token provided", hiding server misconfig.
+const authenticate = async (
+  req: NextRequest,
+): Promise<{ ok: true; token: DecodedToken } | GuardFailure> => {
   const token = getBearerToken(req);
-  if (!token) return null;
+  if (!token) return fail(401, "No authorization token provided");
   try {
-    return await adminApp.auth().verifyIdToken(token);
-  } catch {
-    return null;
+    return { ok: true, token: await adminApp.auth().verifyIdToken(token) };
+  } catch (err) {
+    if (isInvalidTokenError(err)) {
+      return fail(401, "Invalid or expired authorization token");
+    }
+    console.error(
+      "Firebase Admin SDK unavailable during token verification:",
+      err,
+    );
+    return fail(503, SERVICE_UNAVAILABLE_MESSAGE);
   }
 };
 
@@ -49,10 +76,9 @@ const verifyToken = async (req: NextRequest): Promise<DecodedToken | null> => {
 export async function requireAdmin(
   req: NextRequest,
 ): Promise<AdminGuard | GuardFailure> {
-  const decodedToken = await verifyToken(req);
-  if (!decodedToken) {
-    return fail(401, "No authorization token provided");
-  }
+  const authed = await authenticate(req);
+  if (authed.ok === false) return authed;
+  const decodedToken = authed.token;
 
   if (decodedToken.admin === true) {
     return { ok: true, uid: decodedToken.uid, token: decodedToken };
@@ -74,10 +100,9 @@ export async function requireAdmin(
 export async function requireTeacher(
   req: NextRequest,
 ): Promise<TeacherGuard | GuardFailure> {
-  const decodedToken = await verifyToken(req);
-  if (!decodedToken) {
-    return fail(401, "No authorization token provided");
-  }
+  const authed = await authenticate(req);
+  if (authed.ok === false) return authed;
+  const decodedToken = authed.token;
 
   const teacherDoc = await adminApp
     .firestore()
@@ -97,14 +122,19 @@ export async function requireTeacherOrAdmin(
   req: NextRequest,
 ): Promise<AuthedGuard | GuardFailure> {
   const teacher = await requireTeacher(req);
-  if (teacher.ok) {
+  if (teacher.ok === true) {
     return { ok: true, uid: teacher.uid, token: teacher.token };
   }
+  // Only a 403 ("not a teacher") should fall through to the admin check;
+  // a missing/invalid token (401) or an unavailable Admin SDK (503) must
+  // propagate as-is instead of being masked as a generic authorization error.
+  if (teacher.response.status !== 403) return teacher;
 
   const adminGuard = await requireAdmin(req);
-  if (adminGuard.ok) {
+  if (adminGuard.ok === true) {
     return adminGuard;
   }
+  if (adminGuard.response.status !== 403) return adminGuard;
 
   return fail(403, "Only teachers or admins are authorized");
 }
@@ -117,10 +147,9 @@ export async function requireTeacherOrAdmin(
 export async function requireStudent(
   req: NextRequest,
 ): Promise<StudentGuard | GuardFailure> {
-  const decodedToken = await verifyToken(req);
-  if (!decodedToken) {
-    return fail(401, "No authorization token provided");
-  }
+  const authed = await authenticate(req);
+  if (authed.ok === false) return authed;
+  const decodedToken = authed.token;
 
   const firestore = adminApp.firestore();
   const [userDoc, studentDoc] = await Promise.all([
@@ -152,9 +181,7 @@ export async function requireStudent(
 export async function requireAuthenticatedUser(
   req: NextRequest,
 ): Promise<AuthedGuard | GuardFailure> {
-  const decodedToken = await verifyToken(req);
-  if (!decodedToken) {
-    return fail(401, "Invalid or missing authorization token");
-  }
-  return { ok: true, uid: decodedToken.uid, token: decodedToken };
+  const authed = await authenticate(req);
+  if (authed.ok === false) return authed;
+  return { ok: true, uid: authed.token.uid, token: authed.token };
 }
