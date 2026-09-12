@@ -2,7 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ported from legacy frontend/src/index.css */
+/* ---------- CampusConnect design system base ---------- */
+
+:root {
+  --cc-canvas: #f8fafc;
+  --cc-surface: #ffffff;
+  --cc-line: #e2e8f0;
+  --cc-ink: #0f172a;
+}
 
 html,
 body {
@@ -11,7 +18,10 @@ body {
 }
 
 body {
-  background-color: #f6f7fb;
+  background-color: var(--cc-canvas);
+  color: var(--cc-ink);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
 }
 
 img,
@@ -19,6 +29,13 @@ video,
 canvas,
 svg {
   max-width: 100%;
+}
+
+/* Visible, consistent keyboard focus */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 @layer utilities {
@@ -73,8 +90,23 @@ svg {
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .shimmer {
+    .shimmer,
+    .animate-fade-up,
+    .animate-drawer-in {
       animation: none;
     }
   }
+}
+
+/* Thin, quiet scrollbars inside the app shell */
+.cc-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.cc-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+.cc-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }

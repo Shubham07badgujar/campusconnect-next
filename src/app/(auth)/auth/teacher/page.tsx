@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { BookOpenCheck } from "lucide-react";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import AuthCard from "@/components/auth/AuthCard";
+import Button from "@/components/ui/Button";
+import { Field, Input, PasswordInput } from "@/components/ui/Field";
 
 export default function TeacherAuthPage() {
   const router = useRouter();
@@ -54,7 +57,7 @@ export default function TeacherAuthPage() {
           setError("You are not authorized as a teacher.");
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login Error:", err.message);
       setError(err.message);
     } finally {
@@ -63,118 +66,81 @@ export default function TeacherAuthPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#eef2f6] px-4 pb-8 pt-24 sm:px-6">
-      <div className="pointer-events-none absolute -left-24 top-24 h-60 w-60 rounded-full bg-[#bff0df] blur-3xl" />
-      <div className="pointer-events-none absolute -right-16 bottom-6 h-64 w-64 rounded-full bg-[#d2e9ff] blur-3xl" />
+    <AuthCard
+      accent="teacher"
+      icon={BookOpenCheck}
+      kicker="Faculty portal"
+      title="Welcome back"
+      panelTitle="Manage attendance and classroom control"
+      panelText="Sign in with your Teacher ID or registered email to start sessions, view analytics, and manage student attendance."
+      highlights={[
+        "Teacher ID to email resolution is supported",
+        "Live attendance sessions with QR fallback",
+        "Subject analytics and exportable records",
+      ]}
+      error={error}
+    >
+      <form onSubmit={handleSubmit} className="mt-5 space-y-4" noValidate>
+        <Field
+          label="Teacher Login ID or Email"
+          htmlFor="teacher-id"
+          required
+          hint="Example: pm01 or teacher@college.edu"
+        >
+          <Input
+            id="teacher-id"
+            type="text"
+            autoComplete="username"
+            placeholder="Login ID or email"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+          />
+        </Field>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="relative mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xl lg:grid-cols-2"
-      >
-        <div className="hidden bg-gradient-to-br from-[#14967f] to-[#32b69d] p-8 text-white lg:block">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100">
-            Faculty Access
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold leading-tight">
-            Manage Attendance and Classroom Control
-          </h1>
-          <p className="mt-4 text-sm text-emerald-50/95">
-            Login using your teacher ID or registered email to start sessions,
-            view analytics, and manage student attendance.
-          </p>
+        <Field label="Password" htmlFor="teacher-password" required>
+          <PasswordInput
+            id="teacher-password"
+            autoComplete="current-password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
 
-          <div className="mt-8 space-y-3 text-sm">
-            <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
-              Teacher ID to email resolve is supported
-            </div>
-            <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
-              Role claim validation before dashboard access
-            </div>
-            <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3">
-              Teacher accounts are provisioned by admin
-            </div>
-          </div>
+        <div className="flex items-center justify-end text-sm">
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                `/reset-password?loginId=${encodeURIComponent(String(identifier || "").trim())}`,
+              )
+            }
+            className="font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+          >
+            Forgot password?
+          </button>
         </div>
 
-        <div className="p-5 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#14967f]">
-            Teacher Portal
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900">
-            Login as Teacher
-          </h2>
+        <Button
+          type="submit"
+          fullWidth
+          size="lg"
+          loading={loading}
+          className="!bg-emerald-600 hover:!bg-emerald-700"
+        >
+          {loading ? "Signing in..." : "Sign in as Teacher"}
+        </Button>
+      </form>
 
-          {error ? (
-            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-              {error}
-            </div>
-          ) : null}
-
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Teacher Login ID or Email
-              </label>
-              <input
-                type="text"
-                placeholder="Example: pm01 or teacher@college.edu"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-800 outline-none transition focus:border-[#14967f] focus:ring-2 focus:ring-[#c9efe7]"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Password
-              </label>
-              <input
-                type="password"
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-800 outline-none transition focus:border-[#14967f] focus:ring-2 focus:ring-[#c9efe7]"
-                required
-              />
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              type="submit"
-              className="w-full rounded-xl bg-[#14967f] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0f7f6b]"
-              disabled={loading}
-            >
-              {loading ? "Please wait..." : "Login as Teacher"}
-            </motion.button>
-          </form>
-
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm">
-            <button
-              onClick={() => router.push("/login")}
-              type="button"
-              className="font-semibold text-slate-600 hover:text-slate-900"
-            >
-              ← Back to Role Selection
-            </button>
-
-            <button
-              onClick={() =>
-                router.push(
-                  `/reset-password?loginId=${encodeURIComponent(String(identifier || "").trim())}`,
-                )
-              }
-              className="font-semibold text-[#14967f] hover:underline"
-              type="button"
-            >
-              Forgot password?
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </div>
+      <div className="mt-5 text-sm">
+        <button
+          onClick={() => router.push("/login")}
+          type="button"
+          className="font-medium text-ink-soft transition hover:text-ink"
+        >
+          ← Choose a different role
+        </button>
+      </div>
+    </AuthCard>
   );
 }
