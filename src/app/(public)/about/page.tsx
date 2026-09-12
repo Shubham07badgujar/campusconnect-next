@@ -60,7 +60,7 @@ const featureStories = [
   },
   {
     tag: "Attendance Intelligence",
-    title: "Face, QR, and biometric-ready workflows",
+    title: "Face, QR, and passkey-ready workflows",
     detail:
       "Flexible attendance paths designed for both classroom speed and record confidence.",
   },
@@ -77,59 +77,46 @@ const team = [
     name: "Shubham Badgujar",
     role: "Project Creator · Architecture + Platform Logic",
     focus: "Release stability, testing strategy, and deployment quality.",
-    aura: "from-[#eadfff] via-[#f5f1ff] to-[#fbf9ff]",
-    ring: "#9a82d8",
   },
   {
     name: "Aditi Sharma",
     role: "Frontend + Product Experience",
     focus: "Design systems, UX choreography, and student-facing flows.",
-    aura: "from-[#ffdbcb] via-[#fff3ed] to-[#f8fbff]",
-    ring: "#f59f79",
   },
   {
     name: "Rohan Deshmukh",
     role: "Backend + Attendance Intelligence",
     focus: "Face-recognition pipelines, automation, and real-time services.",
-    aura: "from-[#d4f3ff] via-[#edfaff] to-[#f7fcff]",
-    ring: "#66b7d4",
   },
   {
     name: "Sneha Kulkarni",
-    role: "User flow + Platform Reliability",
-    focus: "Face-recognition pipelines and high-confidence verification.",
-    aura: "from-[#ddeed9] via-[#f2fbf0] to-[#f9fdf8]",
-    ring: "#7ead75",
+    role: "User Flow + Platform Reliability",
+    focus: "Verification flows and high-confidence attendance records.",
   },
 ];
 
 const fadeInUp: any = {
   hidden: { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.55, ease: "easeOut" },
-  },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: "easeOut" } },
 };
 
 const staggerContainer = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.12 },
-  },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
 
 function About() {
   return (
-    <div className="bg-[#f6f7fb] text-slate-800">
-      <section className="relative isolate h-[72vh] overflow-hidden">
+    <div className="bg-canvas text-ink">
+      {/* Hero — campus building image preserved */}
+      <section className="relative isolate h-[68vh] overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={about_img.src}
-          alt="Campus Building"
+          alt="Campus building"
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-[#f6f7fb]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/45 to-canvas" />
 
         <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -138,13 +125,12 @@ function About() {
             transition={{ duration: 0.6 }}
             className="max-w-3xl text-white"
           >
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em]">
-              <Sparkles className="h-3.5 w-3.5" />
-              About CampusConnect
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] backdrop-blur-md">
+              <Sparkles className="h-3.5 w-3.5" /> About CampusConnect
             </span>
-            <h1 className="mt-5 text-4xl font-bold leading-tight sm:text-6xl">
+            <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
               Building the digital spine
-              <span className="block bg-gradient-to-r from-[#9fd5ff] via-[#d3b9ff] to-[#ffc3a6] bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-blue-300 via-indigo-200 to-brand-300 bg-clip-text text-transparent">
                 for student life
               </span>
             </h1>
@@ -156,23 +142,17 @@ function About() {
         </div>
       </section>
 
+      {/* Mission + Platform snapshot */}
       <section className="px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm sm:p-10"
-          >
-            <span className="inline-flex items-center gap-2 rounded-full bg-[#ebf5ff] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#1f668c]">
-              <GraduationCap className="h-4 w-4" />
-              Our Mission
+        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-card border border-line bg-surface p-7 shadow-card sm:p-9">
+            <span className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
+              <GraduationCap className="h-4 w-4" /> Our Mission
             </span>
-            <h2 className="mt-4 text-3xl font-bold text-slate-800 sm:text-4xl">
+            <h2 className="mt-4 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
               Simplify campus operations without losing human connection
             </h2>
-            <p className="mt-4 text-slate-600">
+            <p className="mt-4 text-ink-soft">
               We are designing a platform where communication, attendance,
               scheduling, and academic planning feel coherent instead of
               fragmented. CampusConnect is focused on reducing admin fatigue and
@@ -188,78 +168,95 @@ function About() {
               ].map((line) => (
                 <div
                   key={line}
-                  className="rounded-xl border border-slate-200 bg-[#fafcff] px-4 py-3 text-sm font-medium text-slate-700"
+                  className="rounded-lg border border-line bg-canvas px-4 py-3 text-sm font-medium text-ink"
                 >
                   {line}
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
 
-          <motion.aside
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.05 }}
-            className="rounded-[2rem] border border-slate-200 bg-gradient-to-br from-[#0f4e6b] via-[#1c6a8d] to-[#2e8cb6] p-7 text-white shadow-sm sm:p-10"
-          >
+          <aside className="rounded-card bg-gradient-to-br from-brand-700 via-brand-600 to-indigo-500 p-7 text-white shadow-pop sm:p-9">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/90">
-              <LayoutPanelTop className="h-4 w-4" />
-              Platform Snapshot
+              <LayoutPanelTop className="h-4 w-4" /> Platform Snapshot
             </span>
             <div className="mt-5 space-y-3 text-sm text-white/95">
               <p>12+ major modules integrated under one product surface.</p>
-              <p>
-                Role-specific flows for admin, teacher, and student contexts.
-              </p>
+              <p>Role-specific flows for admin, teacher, and student contexts.</p>
               <p>Real-time notifications and exam reminder support.</p>
-              <p>Attendance stack powered by AI-first capabilities.</p>
+              <p>Attendance stack with server-verified passkeys and face liveness.</p>
             </div>
-          </motion.aside>
+          </aside>
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[#f2f6ff] px-4 py-20 sm:px-6 lg:px-8">
-        <div className="pointer-events-none absolute -top-16 left-0 h-72 w-72 rounded-full bg-[#c8dcff]/45 blur-3xl" />
-
+      {/* Values */}
+      <section className="bg-white px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="mb-10 text-center"
-          >
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#b2c7ef] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#355c9d]">
-              <Bot className="h-3.5 w-3.5" />
-              What We Are Building
+          <div className="mb-10 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
+              What Guides Us
             </span>
-            <h2 className="mt-4 text-4xl font-bold text-slate-800 sm:text-5xl">
+            <h2 className="mt-4 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+              Principles behind the product
+            </h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {values.map((value) => {
+              const Icon = value.icon;
+              return (
+                <div
+                  key={value.title}
+                  className="rounded-card border border-line bg-surface p-6 shadow-card"
+                >
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-4 text-sm font-semibold text-ink">
+                    {value.title}
+                  </h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                    {value.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* What we are building */}
+      <section className="px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-10 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
+              <Bot className="h-3.5 w-3.5" /> What We Are Building
+            </span>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
               Design, intelligence, and workflow depth
             </h2>
-          </motion.div>
+          </div>
 
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={staggerContainer}
-            className="grid gap-5 md:grid-cols-2"
+            className="grid gap-4 md:grid-cols-2"
           >
             {featureStories.map((story) => (
               <motion.article
                 key={story.title}
                 variants={fadeInUp}
-                whileHover={{ y: -6 }}
-                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-xl"
+                className="rounded-card border border-line bg-surface p-6 shadow-card transition hover:-translate-y-1 hover:shadow-pop"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#3c6ca8]">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-600">
                   {story.tag}
                 </p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-800">
+                <h3 className="mt-2 text-xl font-semibold text-ink">
                   {story.title}
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                <p className="mt-2 text-sm leading-relaxed text-ink-soft">
                   {story.detail}
                 </p>
               </motion.article>
@@ -268,88 +265,63 @@ function About() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[#f2f6ff] px-4 py-20 sm:px-6 lg:px-8">
-        <div className="pointer-events-none absolute -top-16 right-0 h-64 w-64 rounded-full bg-[#ced8ff]/40 blur-3xl" />
-
+      {/* Team */}
+      <section className="bg-white px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="mb-10 text-center"
-          >
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#b6c8ef] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#3d5b9a]">
-              <Users className="h-3.5 w-3.5" />
-              Team Behind CampusConnect
+          <div className="mb-10 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">
+              <Users className="h-3.5 w-3.5" /> Team Behind CampusConnect
             </span>
-            <h2 className="mt-4 text-4xl font-bold text-slate-800 sm:text-5xl">
+            <h2 className="mt-4 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
               Four minds, one campus-grade mission
             </h2>
-            <p className="mx-auto mt-3 max-w-3xl text-slate-600">
-              A compact developer squad blending product design, AI attendance,
-              backend architecture, and release discipline.
+            <p className="mx-auto mt-3 max-w-2xl text-ink-soft">
+              A compact developer squad blending product design, attendance
+              intelligence, backend architecture, and release discipline.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="grid gap-5 md:grid-cols-2 xl:grid-cols-4"
-          >
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {team.map((member, index) => (
-              <motion.div
+              <div
                 key={member.name}
-                variants={fadeInUp}
-                whileHover={{ y: -8 }}
-                className={`rounded-3xl border border-slate-200 bg-gradient-to-br ${member.aura} p-5 shadow-sm transition-all duration-300 hover:shadow-xl`}
+                className="rounded-card border border-line bg-surface p-6 shadow-card transition hover:-translate-y-1 hover:shadow-pop"
               >
-                <div
-                  className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl border bg-white text-sm font-bold"
-                  style={{ borderColor: member.ring, color: member.ring }}
-                >
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-sm font-bold text-brand-700">
                   {String(index + 1).padStart(2, "0")}
-                </div>
-                <h3 className="text-lg font-semibold text-slate-800">
+                </span>
+                <h3 className="mt-4 text-base font-semibold text-ink">
                   {member.name}
                 </h3>
-                <p className="mt-1 text-sm font-medium text-slate-700">
+                <p className="mt-1 text-sm font-medium text-ink-soft">
                   {member.role}
                 </p>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                <p className="mt-3 text-sm leading-relaxed text-ink-soft">
                   {member.focus}
                 </p>
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
+      {/* CTA */}
       <section className="px-4 pb-20 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mx-auto flex max-w-5xl flex-col items-center rounded-[2rem] border border-slate-200 bg-white px-6 py-10 text-center shadow-sm sm:px-10"
-        >
-          <h3 className="text-3xl font-bold text-slate-800 sm:text-4xl">
+        <div className="mx-auto flex max-w-5xl flex-col items-center rounded-card bg-gradient-to-br from-brand-700 via-brand-600 to-indigo-500 px-6 py-12 text-center text-white shadow-pop sm:px-10">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Want to explore CampusConnect in action?
-          </h3>
-          <p className="mt-3 max-w-3xl text-slate-600">
-            See how your campus can move from isolated tools to one beautiful,
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm text-white/90">
+            See how your campus can move from isolated tools to one coherent,
             student-focused operating layer.
           </p>
           <Link
             href="/login"
-            className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-[#145d80] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0f4a67]"
+            className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
           >
-            Start Exploring
-            <ArrowRight className="h-4 w-4" />
+            Start Exploring <ArrowRight className="h-4 w-4" />
           </Link>
-        </motion.div>
+        </div>
       </section>
 
       <Footer />
