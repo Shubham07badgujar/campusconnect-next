@@ -69,6 +69,9 @@ scripts/**                # admin utilities (CommonJS, run with node)
 
 ## Deployment (Render)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Shubham07badgujar/campusconnect-next)
+
+
 One web service replaces the old two-service setup. `render.yaml` is a ready
 Blueprint: build `npm ci && npm run build`, start `npm start`, health check on
 `/api/subjects`. Set the env vars listed in `.env.example` (service account as
