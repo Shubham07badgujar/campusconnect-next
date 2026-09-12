@@ -82,8 +82,10 @@ function loadServiceAccount(): ServiceAccountJson {
   }
 }
 
-// Next.js dev mode creates fresh module instances on recompiles — guard the app
-// singleton on globalThis so initializeApp never runs twice.
+// LAZY initialization: credentials are loaded on the FIRST actual use, never at
+// import time. This is essential — `next build` evaluates route-handler modules
+// while collecting page data, and build machines (Render) have no credentials.
+// A globalThis guard also keeps dev-mode recompiles from re-initializing.
 const ADMIN_KEY = Symbol.for("campusconnect.firebase-admin");
 
 function initAdmin(): typeof admin {
@@ -107,9 +109,16 @@ function initAdmin(): typeof admin {
   return admin;
 }
 
-const adminApp = initAdmin();
+// Every existing call site does `adminApp.firestore()` / `adminApp.auth()` at
+// REQUEST time — this proxy defers initialization until that first access.
+const lazyAdmin = new Proxy({} as typeof admin, {
+  get(_target, prop) {
+    return (initAdmin() as unknown as Record<PropertyKey, unknown>)[prop];
+  },
+});
 
-export default adminApp;
-export const firestoreAdmin = () => adminApp.firestore();
-export const authAdmin = () => adminApp.auth();
-export const FieldValue = adminApp.firestore.FieldValue;
+export default lazyAdmin;
+export const firestoreAdmin = () => initAdmin().firestore();
+export const authAdmin = () => initAdmin().auth();
+// Static namespace value — available without an initialized app.
+export const FieldValue = admin.firestore.FieldValue;
