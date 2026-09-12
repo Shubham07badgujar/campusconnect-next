@@ -1,0 +1,18 @@
+# dependencies / build
+node_modules
+.next
+out
+dist
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets — never commit
+.env
+.env.*
+!.env.example
+service-account-key.json
+rotated-credentials-*.csv
+
+# logs / os
+*.log
+.DS_Store

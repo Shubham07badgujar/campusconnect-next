@@ -1,0 +1,277 @@
+"use client";
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FiArrowLeft, FiSave, FiRefreshCw, FiBookOpen } from "react-icons/fi";
+import { auth } from "@/lib/client/firebase";
+import {
+  BRANCHES,
+  YEARS,
+  SEMESTERS,
+  DEFAULT_SUBJECT_SETS,
+} from "@/lib/client/branchYearSubjects";
+
+const API_URL = "";
+
+export default function SubjectSetManagement() {
+  const router = useRouter();
+  const [subjectSets, setSubjectSets] = useState(DEFAULT_SUBJECT_SETS);
+  const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
+  const [selectedYear, setSelectedYear] = useState(YEARS[0]);
+  const [selectedSemester, setSelectedSemester] = useState(SEMESTERS[0]);
+  const [subjectText, setSubjectText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const selectedSubjects = useMemo(() => {
+    return (
+      subjectSets?.[selectedBranch]?.[selectedYear]?.[selectedSemester] || []
+    );
+  }, [subjectSets, selectedBranch, selectedYear, selectedSemester]);
+
+  useEffect(() => {
+    setSubjectText(selectedSubjects.join("\n"));
+  }, [selectedSubjects]);
+
+  const fetchSubjectSets = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        router.push("/auth/admin");
+        return;
+      }
+
+      const token = await user.getIdToken();
+      const response = await fetch(`${API_URL}/api/admin/subject-sets`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to load subject sets");
+      }
+      setSubjectSets(data.subjectSets || DEFAULT_SUBJECT_SETS);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubjectSets();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMessage("");
+    setError("");
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        router.push("/auth/admin");
+        return;
+      }
+
+      const subjects = subjectText
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      if (subjects.length === 0) {
+        throw new Error("At least one subject is required");
+      }
+
+      const token = await user.getIdToken();
+      const response = await fetch(`${API_URL}/api/admin/subject-sets`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          branch: selectedBranch,
+          year: selectedYear,
+          semester: selectedSemester,
+          subjects,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to save subject set");
+      }
+
+      setSubjectSets(data.subjectSets || subjectSets);
+      setMessage("Subject set saved successfully");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#eef2f6] px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <button
+          onClick={() => router.push("/admin-dashboard")}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:px-4 sm:py-2 sm:text-sm"
+        >
+          <FiArrowLeft className="h-4 w-4" /> Back to Dashboard
+        </button>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 flex items-center">
+            <FiBookOpen className="mr-3" /> Subject Set Management
+          </h1>
+          <p className="text-slate-600">
+            Manage centralized subjects for each branch and year. These sets are
+            used for both student onboarding and teacher course assignment
+            consistency.
+          </p>
+        </div>
+
+        {error && (
+          <div className="bg-red-100 text-red-700 px-4 py-2 rounded">
+            {error}
+          </div>
+        )}
+        {message && (
+          <div className="bg-green-100 text-green-700 px-4 py-2 rounded">
+            {message}
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Branch
+              </label>
+              <select
+                className="w-full border rounded-lg px-3 py-2"
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+              >
+                {BRANCHES.map((branch) => (
+                  <option key={branch} value={branch}>
+                    {branch}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Year
+              </label>
+              <select
+                className="w-full border rounded-lg px-3 py-2"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+              >
+                {YEARS.map((year) => (
+                  <option key={year} value={year}>
+                    {year} Year
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Semester
+              </label>
+              <select
+                className="w-full border rounded-lg px-3 py-2"
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+              >
+                {SEMESTERS.map((semester) => (
+                  <option key={semester} value={semester}>
+                    Semester {semester}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end gap-2">
+              <button
+                onClick={fetchSubjectSets}
+                disabled={loading}
+                className="flex items-center bg-slate-100 hover:bg-gray-200 text-slate-700 px-4 py-2 rounded-lg"
+              >
+                <FiRefreshCw className="mr-2" />{" "}
+                {loading ? "Refreshing..." : "Refresh"}
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center bg-[#2f87d9] hover:bg-[#1f6fb7] text-white px-4 py-2 rounded-lg"
+              >
+                <FiSave className="mr-2" /> {saving ? "Saving..." : "Save Set"}
+              </button>
+            </div>
+          </div>
+
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Subjects for {selectedBranch} - {selectedYear} Year - Semester{" "}
+            {selectedSemester} (one per line)
+          </label>
+          <textarea
+            className="w-full min-h-[220px] border rounded-lg px-3 py-2"
+            value={subjectText}
+            onChange={(e) => setSubjectText(e.target.value)}
+            placeholder="Enter one subject per line"
+          />
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            Current Subject Matrix
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-[1200px] w-full text-sm border border-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="text-left p-3 border-b">Branch</th>
+                  <th className="text-left p-3 border-b">1st - Sem 1</th>
+                  <th className="text-left p-3 border-b">1st - Sem 2</th>
+                  <th className="text-left p-3 border-b">2nd - Sem 1</th>
+                  <th className="text-left p-3 border-b">2nd - Sem 2</th>
+                  <th className="text-left p-3 border-b">3rd - Sem 1</th>
+                  <th className="text-left p-3 border-b">3rd - Sem 2</th>
+                  <th className="text-left p-3 border-b">4th - Sem 1</th>
+                  <th className="text-left p-3 border-b">4th - Sem 2</th>
+                </tr>
+              </thead>
+              <tbody>
+                {BRANCHES.map((branch) => (
+                  <tr key={branch} className="align-top">
+                    <td className="p-3 border-b font-medium">{branch}</td>
+                    {YEARS.map((year) => (
+                      <React.Fragment key={`${branch}-${year}`}>
+                        {SEMESTERS.map((semester) => (
+                          <td
+                            key={`${branch}-${year}-${semester}`}
+                            className="p-3 border-b text-xs text-slate-600"
+                          >
+                            {(
+                              subjectSets?.[branch]?.[year]?.[semester] || []
+                            ).join(", ") || "-"}
+                          </td>
+                        ))}
+                      </React.Fragment>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

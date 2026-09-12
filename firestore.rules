@@ -1,0 +1,219 @@
+rules_version = '2';
+
+// CampusConnect Firestore security rules
+//
+// Model:
+// - Roles come from Firebase Auth custom claims (admin / teacher), which the
+//   backend and setup scripts set. Students are any signed-in user without a
+//   staff claim.
+// - Attendance, biometrics, passkeys, OTPs, timetable writes, and user/teacher
+//   provisioning all go through the Express backend (Admin SDK bypasses these
+//   rules), so their collections are NOT exposed to clients at all:
+//   attendance_sessions, attendance_records, student_attendance,
+//   subject_attendance_stats, student_devices, student_faces,
+//   attendance_face_challenges, webauthn_challenges, student_passkeys,
+//   password_reset_otps, system_settings, teacherStudentMappings, subjectSets.
+//   Anything without an explicit match below is denied by default.
+//
+// Deploy: paste into Firebase console -> Firestore Database -> Rules,
+// or `firebase deploy --only firestore:rules` with the Firebase CLI.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isTeacher() {
+      return isSignedIn() && request.auth.token.teacher == true;
+    }
+
+    function isStaff() {
+      return isAdmin() || isTeacher();
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // The update touches ONLY the given keys
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // The caller is the student or teacher on the chat document
+    function isChatParticipant(chatId) {
+      let chat = get(/databases/$(database)/documents/chats/$(chatId)).data;
+      return isSignedIn() &&
+        (chat.studentId == request.auth.uid || chat.teacherId == request.auth.uid);
+    }
+
+    // ---------- identity & profiles ----------
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin();
+      // Self-service profile edits may not touch role/academic identity fields
+      allow update: if isAdmin() ||
+        (isSelf(uid) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(
+          ['role', 'prn', 'rollNo', 'rollNumber', 'subjects', 'year',
+           'semester', 'dept', 'department', 'loginId', 'email', 'uid']
+        ));
+      allow delete: if isAdmin();
+    }
+
+    match /students/{uid} {
+      allow read: if isStaff() || isSelf(uid);
+      allow write: if isAdmin();
+    }
+
+    match /teachers/{uid} {
+      // Students browse teachers (chat, courses); management is admin-only
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /admins/{uid} {
+      allow read: if isAdmin() || isSelf(uid);
+      allow write: if false; // console / backend scripts only
+    }
+
+    // ---------- announcements ----------
+    match /announcements/{id} {
+      allow read: if isSignedIn();
+      allow create, delete: if isAdmin();
+      // Anyone signed in may mark an announcement read (readBy arrayUnion);
+      // everything else is admin-only
+      allow update: if isAdmin() ||
+        (isSignedIn() && onlyChanges(['readBy']));
+    }
+
+    // ---------- chat ----------
+    match /chats/{chatId} {
+      allow read: if isSignedIn() &&
+        (resource.data.studentId == request.auth.uid ||
+         resource.data.teacherId == request.auth.uid);
+      allow create: if isSignedIn() &&
+        (request.resource.data.studentId == request.auth.uid ||
+         request.resource.data.teacherId == request.auth.uid);
+      allow update: if isSignedIn() &&
+        (resource.data.studentId == request.auth.uid ||
+         resource.data.teacherId == request.auth.uid) &&
+        onlyChanges(['lastMessage', 'lastMessageTimestamp', 'updatedAt']);
+      allow delete: if isAdmin();
+    }
+
+    match /messages/{id} {
+      allow read: if isChatParticipant(resource.data.chatId);
+      allow create: if isSignedIn() &&
+        request.resource.data.senderId == request.auth.uid &&
+        isChatParticipant(request.resource.data.chatId);
+      // Receiver may mark a message as read; nothing else changes client-side
+      allow update: if isSignedIn() &&
+        resource.data.receiverId == request.auth.uid &&
+        onlyChanges(['read']);
+      allow delete: if isAdmin() ||
+        (isSignedIn() && resource.data.senderId == request.auth.uid);
+    }
+
+    // ---------- study materials ----------
+    match /studyMaterials/{id} {
+      allow read: if isSignedIn();
+      allow create: if isStaff() &&
+        request.resource.data.uploadedBy == request.auth.uid;
+      allow update, delete: if isAdmin() ||
+        (isTeacher() && resource.data.uploadedBy == request.auth.uid);
+    }
+
+    // ---------- calendars & exams ----------
+    match /events/{id} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    match /academicCalendar/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /examTimetable/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /exam_timetable_files/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /academic_calendar_files/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ---------- FixIt board ----------
+    match /fixitComplaints/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+        request.resource.data.createdByUid == request.auth.uid;
+      // Two allowed client updates: staff resolving, or anyone upvoting
+      allow update: if
+        (isStaff() && onlyChanges(
+          ['status', 'resolvedAt', 'resolvedByUid',
+           'resolvedByName', 'resolvedByRole'])) ||
+        (isSignedIn() && onlyChanges(['upvotesCount', 'upvotedBy']));
+      allow delete: if isAdmin() ||
+        (isSignedIn() && resource.data.createdByUid == request.auth.uid);
+    }
+
+    // ---------- legacy academic data ----------
+    match /courses/{id} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    match /enrollments/{id} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    match /departments/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Timetables are written only by the backend; clients read
+    match /timetables/{id} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Legacy singular collection probed by TeacherDashboard (usually empty)
+    match /timetable/{id} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Legacy attendance tracker (teacher tool); reads also used by course views
+    match /attendance/{id} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    // Subject sets are managed via the backend API; clients may read
+    match /subjectSets/{id} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // ---------- everything else: server-only, deny ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

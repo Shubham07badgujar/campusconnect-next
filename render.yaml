@@ -1,0 +1,43 @@
+# Render Blueprint — CampusConnect (single full-stack Next.js service)
+# The custom server hosts Next.js pages, the /api routes, AND Socket.IO on one
+# port, so ONE web service replaces the old frontend+backend pair.
+services:
+  - type: web
+    name: campusconnect
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/subjects?department=Computer%20Engineering&year=1st
+    envVars:
+      - key: FIREBASE_SERVICE_ACCOUNT_BASE64
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: EMAIL_USERNAME
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+      - key: PASSWORD_RESET_OTP_SECRET
+        generateValue: true
+      - key: ATTENDANCE_DISTANCE_ENFORCEMENT
+        value: "false"
+      - key: ENABLE_EXAM_REMINDER_NOTIFICATIONS
+        value: "false"
+      # Client Firebase config (public identifiers)
+      - key: NEXT_PUBLIC_FIREBASE_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_APP_ID
+        sync: false
