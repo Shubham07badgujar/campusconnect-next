@@ -23,20 +23,34 @@ export default function Modal({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Keep the latest onClose in a ref so the keydown/scroll-lock effect below can
+  // depend only on `open`. Parents typically pass an inline `() => setOpen(false)`
+  // whose identity changes every render; if that were an effect dependency the
+  // effect would tear down and re-run on every keystroke — re-focusing the panel
+  // and stealing focus from the field being typed into (one char at a time).
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
-    panelRef.current?.focus();
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = original;
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  // Focus the panel once, only when it opens — never on subsequent re-renders.
+  useEffect(() => {
+    if (open) panelRef.current?.focus();
+  }, [open]);
 
   if (!open) return null;
 
