@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   FiUpload,
   FiTrash2,
@@ -9,11 +8,9 @@ import {
   FiPlus,
   FiX,
   FiFileText,
-  FiCalendar,
   FiAlertCircle,
   FiCheck,
   FiEye,
-  FiArrowLeft,
   FiRefreshCw,
 } from "react-icons/fi";
 import { getAuth } from "firebase/auth";
@@ -28,7 +25,23 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/client/firebase";
-import { useRouter } from "next/navigation";
+import Button from "@/components/ui/Button";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import PageHeader from "@/components/ui/PageHeader";
+import { Field, Input, Select } from "@/components/ui/Field";
+import Modal from "@/components/ui/Modal";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
+import Tabs from "@/components/ui/Tabs";
+import { PageLoader, EmptyState } from "@/components/ui/States";
 
 const API_URL = String("")
   .trim()
@@ -369,8 +382,6 @@ const normalizeExamRows = (rows = [], selectedYear = "4th") => {
 };
 
 export default function ExamTimetableManagement() {
-  const router = useRouter();
-
   const [activeTab, setActiveTab] = useState("upload");
   const [selectedYear, setSelectedYear] = useState("4th");
 
@@ -1023,392 +1034,395 @@ export default function ExamTimetableManagement() {
     existingExams.every((exam) => selectedExamIdSet.has(exam.id));
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] px-3 py-6 sm:px-4 sm:py-8">
-      <div className="mx-auto max-w-7xl">
-        <button
-          onClick={() => router.push("/admin-dashboard")}
-          className="mb-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:px-4 sm:py-2 sm:text-sm"
+    <div className="space-y-6">
+      <PageHeader
+        title="Exam Timetable"
+        description="Year-wise OCR import, manual rows, and official timetable PDF upload"
+      />
+
+      {message.text ? (
+        <div
+          className={`flex items-start gap-3 rounded-card border px-4 py-3 text-sm animate-fade-up ${
+            message.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : message.type === "error"
+                ? "border-rose-200 bg-rose-50 text-rose-700"
+                : "border-amber-200 bg-amber-50 text-amber-700"
+          }`}
         >
-          <FiArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </button>
-
-        <motion.div
-          initial={{ opacity: 0, y: -16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-8"
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2f87d9]">
-              <FiCalendar className="h-7 w-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800 sm:text-3xl">
-                Exam Timetable Management
-              </h1>
-              <p className="mt-1 text-sm text-slate-600">
-                Year-wise OCR import, manual rows, and official timetable PDF
-                upload
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        <AnimatePresence>
-          {message.text ? (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className={`mb-5 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${
-                message.type === "success"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : message.type === "error"
-                    ? "border-rose-200 bg-rose-50 text-rose-700"
-                    : "border-amber-200 bg-amber-50 text-amber-700"
-              }`}
-            >
-              {message.type === "success" ? <FiCheck /> : <FiAlertCircle />}
-              <span>{message.text}</span>
-              <button
-                onClick={() => setMessage({ type: "", text: "" })}
-                className="ml-auto"
-              >
-                <FiX />
-              </button>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-
-        <div className="mb-5 rounded-2xl bg-white p-4 shadow-sm">
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Select Academic Year Timetable
-          </label>
-          <select
-            value={selectedYear}
-            onChange={(event) => setSelectedYear(event.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 sm:max-w-xs"
+          {message.type === "success" ? (
+            <FiCheck className="mt-0.5 shrink-0" />
+          ) : (
+            <FiAlertCircle className="mt-0.5 shrink-0" />
+          )}
+          <span>{message.text}</span>
+          <button
+            type="button"
+            onClick={() => setMessage({ type: "", text: "" })}
+            className="ml-auto text-current"
+            aria-label="Dismiss message"
           >
-            {YEARS.map((year) => (
-              <option key={year} value={year}>
-                {year} Year
-              </option>
-            ))}
-          </select>
+            <FiX />
+          </button>
         </div>
+      ) : null}
 
-        <div className="mb-5 flex w-full gap-2 overflow-x-auto rounded-xl bg-white p-2 shadow-sm sm:w-fit">
-          {[
-            { id: "upload", label: "OCR Upload", icon: FiUpload },
-            { id: "manual", label: "Manual Entry", icon: FiEdit2 },
-            { id: "view", label: "View Exams", icon: FiEye },
-            { id: "pdf", label: "Upload PDF", icon: FiFileText },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition ${
-                activeTab === tab.id
-                  ? "bg-[#2f87d9] text-white"
-                  : "text-slate-700 hover:bg-slate-100"
-              }`}
+      <Card>
+        <CardBody>
+          <Field
+            label="Select Academic Year Timetable"
+            htmlFor="exam-year-select"
+          >
+            <Select
+              id="exam-year-select"
+              value={selectedYear}
+              onChange={(event) => setSelectedYear(event.target.value)}
+              className="sm:max-w-xs"
             >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+              {YEARS.map((year) => (
+                <option key={year} value={year}>
+                  {year} Year
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </CardBody>
+      </Card>
 
-        <AnimatePresence mode="wait">
-          {activeTab === "upload" ? (
-            <motion.div
-              key="ocr-upload"
-              initial={{ opacity: 0, x: 14 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -14 }}
-              className="space-y-5"
-            >
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
-                <div className="mb-3 flex items-center gap-2">
-                  <FiUpload className="h-5 w-5 text-[#2f87d9]" />
-                  <h2 className="text-lg font-semibold text-slate-800">
-                    OCR Upload (Year-Wise Timetable)
-                  </h2>
-                </div>
-                <p className="mb-4 text-sm text-slate-600">
-                  Upload the complete year timetable (PDF/image). Parser will
-                  split branch rows automatically.
+      <Tabs
+        items={[
+          {
+            value: "upload",
+            label: (
+              <span className="inline-flex items-center gap-1.5">
+                <FiUpload className="h-4 w-4" /> OCR Upload
+              </span>
+            ),
+          },
+          {
+            value: "manual",
+            label: (
+              <span className="inline-flex items-center gap-1.5">
+                <FiEdit2 className="h-4 w-4" /> Manual Entry
+              </span>
+            ),
+          },
+          {
+            value: "view",
+            label: (
+              <span className="inline-flex items-center gap-1.5">
+                <FiEye className="h-4 w-4" /> View Exams
+              </span>
+            ),
+            count: existingExams.length,
+          },
+          {
+            value: "pdf",
+            label: (
+              <span className="inline-flex items-center gap-1.5">
+                <FiFileText className="h-4 w-4" /> Upload PDF
+              </span>
+            ),
+          },
+        ]}
+        value={activeTab}
+        onChange={setActiveTab}
+      />
+
+      {activeTab === "upload" ? (
+        <div className="space-y-6 animate-fade-up">
+          <Card>
+            <CardHeader
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <FiUpload className="h-4 w-4 text-brand-600" /> OCR Upload
+                  (Year-Wise Timetable)
+                </span>
+              }
+              description="Upload the complete year timetable (PDF/image). Parser will split branch rows automatically."
+            />
+            <CardBody>
+              <label
+                htmlFor="exam-ocr-file"
+                className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-card border-2 border-dashed border-line bg-canvas px-6 py-8 text-center transition hover:border-brand-400"
+              >
+                <input
+                  type="file"
+                  accept=".pdf,image/*"
+                  onChange={handleOcrFileChange}
+                  className="hidden"
+                  id="exam-ocr-file"
+                />
+                <FiUpload className="h-6 w-6 text-brand-500" />
+                <p className="text-sm font-medium text-ink">
+                  {ocrFile ? ocrFile.name : "Click to select PDF/image"}
                 </p>
+                <p className="text-xs text-ink-faint">
+                  OCR supports scanned timetable images and PDFs.
+                </p>
+              </label>
 
-                <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-                  <input
-                    type="file"
-                    accept=".pdf,image/*"
-                    onChange={handleOcrFileChange}
-                    className="hidden"
-                    id="exam-ocr-file"
-                  />
-                  <label htmlFor="exam-ocr-file" className="cursor-pointer">
-                    <p className="text-sm font-medium text-slate-700">
-                      {ocrFile ? ocrFile.name : "Click to select PDF/image"}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      OCR supports scanned timetable images and PDFs.
-                    </p>
-                  </label>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={handleUploadAndExtract}
-                    disabled={!ocrFile || ocrUploading}
-                    className="rounded-lg bg-[#2f87d9] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-                  >
-                    {ocrUploading ? "Processing..." : "Upload & Extract"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmClear(true)}
-                    className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
-                  >
-                    Clear Year Data
-                  </button>
-                </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  onClick={handleUploadAndExtract}
+                  disabled={!ocrFile || ocrUploading}
+                  loading={ocrUploading}
+                >
+                  {ocrUploading ? "Processing..." : "Upload & Extract"}
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={() => setShowConfirmClear(true)}
+                >
+                  Clear Year Data
+                </Button>
               </div>
+            </CardBody>
+          </Card>
 
-              {extractedText ? (
-                <div className="rounded-2xl bg-white p-5 shadow-sm">
-                  <h3 className="mb-3 text-sm font-semibold uppercase text-slate-600">
-                    OCR Extracted Text Preview
-                  </h3>
-                  <pre className="max-h-64 overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 whitespace-pre-wrap">
-                    {extractedText}
-                  </pre>
-                </div>
-              ) : null}
+          {extractedText ? (
+            <Card>
+              <CardHeader title="OCR Extracted Text Preview" />
+              <CardBody>
+                <pre className="cc-scroll max-h-64 overflow-auto rounded-lg border border-line bg-canvas p-3 text-xs whitespace-pre-wrap text-ink-soft">
+                  {extractedText}
+                </pre>
+              </CardBody>
+            </Card>
+          ) : null}
 
-              {parsedPreviewByBranch.length > 0 ? (
-                <div className="rounded-2xl bg-white p-5 shadow-sm">
-                  <h3 className="text-lg font-semibold text-slate-800">
-                    Branch-Wise Preview (Date/Time Ordered)
-                  </h3>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Review grouped rows before saving to the selected year.
-                  </p>
+          {parsedPreviewByBranch.length > 0 ? (
+            <Card>
+              <CardHeader
+                title="Branch-Wise Preview (Date/Time Ordered)"
+                description="Review grouped rows before saving to the selected year."
+              />
+              <CardBody className="space-y-4">
+                {parsedPreviewByBranch.map((group) => (
+                  <div
+                    key={group.branch}
+                    className="overflow-hidden rounded-card border border-line"
+                  >
+                    <div className="flex items-center justify-between border-b border-line bg-canvas px-3 py-2">
+                      <h4 className="text-sm font-semibold text-ink">
+                        {group.branch}
+                      </h4>
+                      <Badge tone="neutral">{group.rows.length} exams</Badge>
+                    </div>
 
-                  <div className="mt-4 space-y-4">
-                    {parsedPreviewByBranch.map((group) => (
-                      <div
-                        key={group.branch}
-                        className="rounded-xl border border-slate-200 bg-slate-50"
-                      >
-                        <div className="flex items-center justify-between rounded-t-xl border-b border-slate-200 bg-white px-3 py-2">
-                          <h4 className="text-sm font-semibold text-slate-800">
-                            {group.branch}
-                          </h4>
-                          <span className="text-xs font-medium text-slate-500">
-                            {group.rows.length} exams
-                          </span>
-                        </div>
-
-                        <div className="max-h-72 overflow-auto p-3">
-                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
-                            {group.rows.map((exam, rowIndex) => (
-                              <div
-                                key={`${group.branch}_${rowIndex}_${exam.courseCode || "row"}`}
-                                className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-white p-2 text-xs sm:col-span-12 sm:grid-cols-12"
-                              >
-                                <div className="sm:col-span-3">
-                                  <p className="font-semibold text-slate-500">
-                                    Date
-                                  </p>
-                                  <p className="text-slate-700">
-                                    {exam.date || "-"}
-                                    {exam.day ? ` (${exam.day})` : ""}
-                                  </p>
-                                </div>
-                                <div className="sm:col-span-3">
-                                  <p className="font-semibold text-slate-500">
-                                    Time
-                                  </p>
-                                  <p className="text-slate-700">
-                                    {exam.time || "-"}
-                                  </p>
-                                </div>
-                                <div className="sm:col-span-2">
-                                  <p className="font-semibold text-slate-500">
-                                    Code
-                                  </p>
-                                  <p className="text-slate-700">
-                                    {exam.courseCode || "-"}
-                                  </p>
-                                </div>
-                                <div className="sm:col-span-4">
-                                  <p className="font-semibold text-slate-500">
-                                    Subject
-                                  </p>
-                                  <p className="text-slate-700">
-                                    {exam.courseName || "-"}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
+                    <div className="cc-scroll max-h-72 space-y-2 overflow-auto p-3">
+                      {group.rows.map((exam, rowIndex) => (
+                        <div
+                          key={`${group.branch}_${rowIndex}_${exam.courseCode || "row"}`}
+                          className="grid grid-cols-1 gap-2 rounded-lg border border-line bg-surface p-2 text-xs sm:grid-cols-12"
+                        >
+                          <div className="sm:col-span-3">
+                            <p className="font-semibold text-ink-faint">Date</p>
+                            <p className="text-ink-soft">
+                              {exam.date || "-"}
+                              {exam.day ? ` (${exam.day})` : ""}
+                            </p>
+                          </div>
+                          <div className="sm:col-span-3">
+                            <p className="font-semibold text-ink-faint">Time</p>
+                            <p className="text-ink-soft">{exam.time || "-"}</p>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <p className="font-semibold text-ink-faint">Code</p>
+                            <p className="text-ink-soft">
+                              {exam.courseCode || "-"}
+                            </p>
+                          </div>
+                          <div className="sm:col-span-4">
+                            <p className="font-semibold text-ink-faint">
+                              Subject
+                            </p>
+                            <p className="text-ink-soft">
+                              {exam.courseName || "-"}
+                            </p>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : null}
-
-              {parsedExams.length > 0 ? (
-                <div className="rounded-2xl bg-white p-5 shadow-sm">
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-lg font-semibold text-slate-800">
-                      Parsed Rows ({parsedExams.length})
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={addEmptyParsedExam}
-                      className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700"
-                    >
-                      <FiPlus className="mr-1 inline" /> Add Row
-                    </button>
-                  </div>
-
-                  <div className="space-y-3 max-h-[460px] overflow-auto">
-                    {parsedExams.map((exam, index) => (
-                      <div
-                        key={`${exam.courseCode || "row"}_${index}`}
-                        className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-12"
-                      >
-                        <input
-                          value={exam.day || ""}
-                          onChange={(e) =>
-                            updateParsedExam(index, "day", e.target.value)
-                          }
-                          placeholder="Day"
-                          className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-2"
-                        />
-                        <input
-                          value={exam.date || ""}
-                          onChange={(e) =>
-                            updateParsedExam(index, "date", e.target.value)
-                          }
-                          placeholder="DD-MM-YYYY"
-                          className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-2"
-                        />
-                        <input
-                          value={exam.time || ""}
-                          onChange={(e) =>
-                            updateParsedExam(index, "time", e.target.value)
-                          }
-                          placeholder="2:00 pm to 5:00 pm"
-                          className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-2"
-                        />
-                        <select
-                          value={exam.branch || ""}
-                          onChange={(e) =>
-                            updateParsedExam(index, "branch", e.target.value)
-                          }
-                          className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-2"
-                        >
-                          <option value="">Select branch</option>
-                          {BRANCH_OPTIONS.map((branch) => (
-                            <option key={branch} value={branch}>
-                              {branch}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          value={exam.courseCode || ""}
-                          onChange={(e) =>
-                            updateParsedExam(
-                              index,
-                              "courseCode",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Course Code"
-                          className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-1"
-                        />
-                        <input
-                          value={exam.courseName || ""}
-                          onChange={(e) =>
-                            updateParsedExam(
-                              index,
-                              "courseName",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Course Name"
-                          className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-2"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeParsedExam(index)}
-                          className="rounded-md border border-rose-300 bg-rose-50 px-2 py-1.5 text-xs text-rose-700 md:col-span-1"
-                        >
-                          <FiX className="mx-auto" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleSaveParsedExams}
-                    className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
-                  >
-                    <FiSave className="mr-2 inline" /> Save Parsed Year
-                    Timetable
-                  </button>
-                </div>
-              ) : null}
-            </motion.div>
+                ))}
+              </CardBody>
+            </Card>
           ) : null}
 
-          {activeTab === "manual" ? (
-            <motion.div
-              key="manual-entry"
-              initial={{ opacity: 0, x: 14 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -14 }}
-              className="rounded-2xl bg-white p-5 shadow-sm"
-            >
-              <h2 className="mb-4 text-lg font-semibold text-slate-800">
-                Manual Exam Row Entry ({selectedYear} Year)
-              </h2>
+          {parsedExams.length > 0 ? (
+            <Card>
+              <CardHeader
+                title={`Parsed Rows (${parsedExams.length})`}
+                actions={
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={addEmptyParsedExam}
+                  >
+                    <FiPlus /> Add Row
+                  </Button>
+                }
+              />
+              <CardBody>
+                <TableWrap>
+                  <Table>
+                    <THead>
+                      <TR>
+                        <TH>Day</TH>
+                        <TH>Date</TH>
+                        <TH>Time</TH>
+                        <TH>Branch</TH>
+                        <TH>Code</TH>
+                        <TH>Course Name</TH>
+                        <TH className="text-right">Remove</TH>
+                      </TR>
+                    </THead>
+                    <TBody>
+                      {parsedExams.map((exam, index) => (
+                        <TR key={`${exam.courseCode || "row"}_${index}`}>
+                          <TD>
+                            <Input
+                              value={exam.day || ""}
+                              onChange={(e) =>
+                                updateParsedExam(index, "day", e.target.value)
+                              }
+                              placeholder="Day"
+                            />
+                          </TD>
+                          <TD>
+                            <Input
+                              value={exam.date || ""}
+                              onChange={(e) =>
+                                updateParsedExam(index, "date", e.target.value)
+                              }
+                              placeholder="DD-MM-YYYY"
+                            />
+                          </TD>
+                          <TD>
+                            <Input
+                              value={exam.time || ""}
+                              onChange={(e) =>
+                                updateParsedExam(index, "time", e.target.value)
+                              }
+                              placeholder="2:00 pm to 5:00 pm"
+                            />
+                          </TD>
+                          <TD>
+                            <Select
+                              value={exam.branch || ""}
+                              onChange={(e) =>
+                                updateParsedExam(
+                                  index,
+                                  "branch",
+                                  e.target.value,
+                                )
+                              }
+                            >
+                              <option value="">Select branch</option>
+                              {BRANCH_OPTIONS.map((branch) => (
+                                <option key={branch} value={branch}>
+                                  {branch}
+                                </option>
+                              ))}
+                            </Select>
+                          </TD>
+                          <TD>
+                            <Input
+                              value={exam.courseCode || ""}
+                              onChange={(e) =>
+                                updateParsedExam(
+                                  index,
+                                  "courseCode",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="Course Code"
+                            />
+                          </TD>
+                          <TD>
+                            <Input
+                              value={exam.courseName || ""}
+                              onChange={(e) =>
+                                updateParsedExam(
+                                  index,
+                                  "courseName",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="Course Name"
+                            />
+                          </TD>
+                          <TD className="text-right">
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => removeParsedExam(index)}
+                              aria-label="Remove row"
+                            >
+                              <FiX />
+                            </Button>
+                          </TD>
+                        </TR>
+                      ))}
+                    </TBody>
+                  </Table>
+                </TableWrap>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <input
+                <Button
+                  variant="success"
+                  fullWidth
+                  className="mt-4"
+                  onClick={handleSaveParsedExams}
+                >
+                  <FiSave /> Save Parsed Year Timetable
+                </Button>
+              </CardBody>
+            </Card>
+          ) : null}
+        </div>
+      ) : null}
+
+      {activeTab === "manual" ? (
+        <Card className="animate-fade-up">
+          <CardHeader title={`Manual Exam Row Entry (${selectedYear} Year)`} />
+          <CardBody>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <Field label="Day (optional)" htmlFor="manual-day">
+                <Input
+                  id="manual-day"
                   type="text"
                   placeholder="Day (optional)"
                   value={manualExam.day}
                   onChange={(e) =>
                     setManualExam((prev) => ({ ...prev, day: e.target.value }))
                   }
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-700"
                 />
-                <input
+              </Field>
+              <Field label="Date" htmlFor="manual-date">
+                <Input
+                  id="manual-date"
                   type="date"
                   value={manualExam.date}
                   onChange={(e) =>
                     setManualExam((prev) => ({ ...prev, date: e.target.value }))
                   }
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-700"
                 />
-                <input
+              </Field>
+              <Field label="Time" htmlFor="manual-time">
+                <Input
+                  id="manual-time"
                   type="text"
                   placeholder="2:00 pm to 5:00 pm"
                   value={manualExam.time}
                   onChange={(e) =>
                     setManualExam((prev) => ({ ...prev, time: e.target.value }))
                   }
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-700"
                 />
-                <select
+              </Field>
+              <Field label="Branch" htmlFor="manual-branch">
+                <Select
+                  id="manual-branch"
                   value={manualExam.branch}
                   onChange={(e) =>
                     setManualExam((prev) => ({
@@ -1416,15 +1430,17 @@ export default function ExamTimetableManagement() {
                       branch: e.target.value,
                     }))
                   }
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-700"
                 >
                   {BRANCH_OPTIONS.map((branch) => (
                     <option key={branch} value={branch}>
                       {branch}
                     </option>
                   ))}
-                </select>
-                <input
+                </Select>
+              </Field>
+              <Field label="Course Code" htmlFor="manual-code">
+                <Input
+                  id="manual-code"
                   type="text"
                   placeholder="Course Code"
                   value={manualExam.courseCode}
@@ -1434,9 +1450,11 @@ export default function ExamTimetableManagement() {
                       courseCode: e.target.value,
                     }))
                   }
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-700"
                 />
-                <input
+              </Field>
+              <Field label="Duration" htmlFor="manual-duration">
+                <Input
+                  id="manual-duration"
                   type="text"
                   placeholder="Duration"
                   value={manualExam.duration}
@@ -1446,9 +1464,15 @@ export default function ExamTimetableManagement() {
                       duration: e.target.value,
                     }))
                   }
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-700"
                 />
-                <input
+              </Field>
+              <Field
+                label="Course Name"
+                htmlFor="manual-name"
+                className="md:col-span-3"
+              >
+                <Input
+                  id="manual-name"
                   type="text"
                   placeholder="Course Name"
                   value={manualExam.courseName}
@@ -1458,394 +1482,364 @@ export default function ExamTimetableManagement() {
                       courseName: e.target.value,
                     }))
                   }
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 md:col-span-3"
                 />
+              </Field>
+            </div>
+
+            <Button className="mt-4" onClick={handleAddManualExam}>
+              <FiPlus /> Add Exam Row
+            </Button>
+          </CardBody>
+        </Card>
+      ) : null}
+
+      {activeTab === "view" ? (
+        <Card className="animate-fade-up">
+          <CardHeader
+            title={`View Exams (${selectedYear} Year)`}
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={fetchExistingExams}>
+                  <FiRefreshCw /> Refresh
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleRemoveDuplicates}
+                >
+                  Remove Duplicates
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={toggleSelectAllExams}
+                  disabled={existingExams.length === 0}
+                >
+                  {allViewRowsSelected ? "Unselect All" : "Select All"}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={handleDeleteSelectedExams}
+                  disabled={selectedExamIds.length === 0}
+                >
+                  <FiTrash2 /> Delete Selected ({selectedExamIds.length})
+                </Button>
+                <Badge tone="neutral">{existingExams.length} rows</Badge>
               </div>
-
-              <button
-                type="button"
-                onClick={handleAddManualExam}
-                className="mt-4 rounded-lg bg-[#2f87d9] px-4 py-2 text-sm font-medium text-white"
-              >
-                <FiPlus className="mr-2 inline" /> Add Exam Row
-              </button>
-            </motion.div>
-          ) : null}
-
-          {activeTab === "view" ? (
-            <motion.div
-              key="view-exams"
-              initial={{ opacity: 0, x: 14 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -14 }}
-              className="rounded-2xl bg-white p-5 shadow-sm"
-            >
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-lg font-semibold text-slate-800">
-                  View Exams ({selectedYear} Year)
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={fetchExistingExams}
-                    className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700"
-                  >
-                    <FiRefreshCw className="mr-1 inline" /> Refresh
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleRemoveDuplicates}
-                    className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1 text-xs text-amber-700"
-                  >
-                    Remove Duplicates
-                  </button>
-                  <button
-                    type="button"
-                    onClick={toggleSelectAllExams}
-                    disabled={existingExams.length === 0}
-                    className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1 text-xs text-slate-700 disabled:opacity-50"
-                  >
-                    {allViewRowsSelected ? "Unselect All" : "Select All"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDeleteSelectedExams}
-                    disabled={selectedExamIds.length === 0}
-                    className="rounded-md border border-rose-300 bg-rose-50 px-3 py-1 text-xs text-rose-700 disabled:opacity-50"
-                  >
-                    <FiTrash2 className="mr-1 inline" /> Delete Selected (
-                    {selectedExamIds.length})
-                  </button>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
-                    {existingExams.length} rows
-                  </span>
-                </div>
-              </div>
-
-              {loadingExams ? (
-                <div className="py-12 text-center text-slate-500">
-                  Loading exam rows...
-                </div>
-              ) : existingExams.length === 0 ? (
-                <div className="py-12 text-center text-slate-500">
-                  No exam rows found for this year.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {existingExams.map((exam) => (
-                    <div
-                      key={exam.id}
-                      className={`rounded-xl border p-3 ${
-                        selectedExamIdSet.has(exam.id)
-                          ? "border-[#2f87d9]/40 bg-[#2f87d9]/5"
-                          : "border-slate-200 bg-slate-50"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="pt-1">
-                          <input
-                            type="checkbox"
-                            checked={selectedExamIdSet.has(exam.id)}
-                            onChange={() => toggleExamSelection(exam.id)}
-                            className="h-4 w-4 accent-[#2f87d9]"
-                            aria-label={`Select exam ${exam.courseCode || exam.id}`}
-                          />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          {editingExam?.id === exam.id ? (
-                            <div className="grid grid-cols-1 gap-2 md:grid-cols-12">
-                              <input
-                                value={editingExam.day || ""}
-                                onChange={(e) =>
-                                  setEditingExam((prev) => ({
-                                    ...prev,
-                                    day: e.target.value,
-                                  }))
-                                }
-                                className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-2"
-                                placeholder="Day"
-                              />
-                              <input
-                                value={editingExam.date || ""}
-                                onChange={(e) =>
-                                  setEditingExam((prev) => ({
-                                    ...prev,
-                                    date: e.target.value,
-                                  }))
-                                }
-                                className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-2"
-                                placeholder="Date"
-                              />
-                              <input
-                                value={editingExam.time || ""}
-                                onChange={(e) =>
-                                  setEditingExam((prev) => ({
-                                    ...prev,
-                                    time: e.target.value,
-                                  }))
-                                }
-                                className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-2"
-                                placeholder="Time"
-                              />
-                              <select
-                                value={editingExam.branch || ""}
-                                onChange={(e) =>
-                                  setEditingExam((prev) => ({
-                                    ...prev,
-                                    branch: e.target.value,
-                                  }))
-                                }
-                                className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-2"
-                              >
-                                <option value="">Select branch</option>
-                                {BRANCH_OPTIONS.map((branch) => (
-                                  <option key={branch} value={branch}>
-                                    {branch}
-                                  </option>
-                                ))}
-                              </select>
-                              <input
-                                value={editingExam.courseCode || ""}
-                                onChange={(e) =>
-                                  setEditingExam((prev) => ({
-                                    ...prev,
-                                    courseCode: e.target.value,
-                                  }))
-                                }
-                                className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-1"
-                                placeholder="Code"
-                              />
-                              <input
-                                value={editingExam.courseName || ""}
-                                onChange={(e) =>
-                                  setEditingExam((prev) => ({
-                                    ...prev,
-                                    courseName: e.target.value,
-                                  }))
-                                }
-                                className="rounded-md border border-slate-300 px-2 py-1.5 text-xs md:col-span-2"
-                                placeholder="Course Name"
-                              />
-                              <div className="flex gap-1 md:col-span-1">
-                                <button
-                                  type="button"
-                                  onClick={handleUpdateExam}
-                                  className="flex-1 rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-xs text-emerald-700"
+            }
+          />
+          <CardBody>
+            {loadingExams ? (
+              <PageLoader label="Loading exam rows..." />
+            ) : existingExams.length === 0 ? (
+              <EmptyState
+                title="No exam rows found"
+                description="No exam rows found for this year."
+              />
+            ) : (
+              <TableWrap>
+                <Table>
+                  <THead>
+                    <TR>
+                      <TH className="w-10">
+                        <input
+                          type="checkbox"
+                          checked={allViewRowsSelected}
+                          onChange={toggleSelectAllExams}
+                          className="h-4 w-4 accent-brand-600"
+                          aria-label="Select all exams"
+                        />
+                      </TH>
+                      <TH>Day</TH>
+                      <TH>Date</TH>
+                      <TH>Time</TH>
+                      <TH>Branch</TH>
+                      <TH>Code</TH>
+                      <TH>Course</TH>
+                      <TH className="text-right">Actions</TH>
+                    </TR>
+                  </THead>
+                  <TBody>
+                    {existingExams.map((exam) => {
+                      const isEditing = editingExam?.id === exam.id;
+                      const selected = selectedExamIdSet.has(exam.id);
+                      return (
+                        <TR
+                          key={exam.id}
+                          className={selected ? "bg-brand-50/60" : ""}
+                        >
+                          <TD>
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => toggleExamSelection(exam.id)}
+                              className="h-4 w-4 accent-brand-600"
+                              aria-label={`Select exam ${exam.courseCode || exam.id}`}
+                            />
+                          </TD>
+                          {isEditing ? (
+                            <>
+                              <TD>
+                                <Input
+                                  value={editingExam.day || ""}
+                                  onChange={(e) =>
+                                    setEditingExam((prev) => ({
+                                      ...prev,
+                                      day: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Day"
+                                />
+                              </TD>
+                              <TD>
+                                <Input
+                                  value={editingExam.date || ""}
+                                  onChange={(e) =>
+                                    setEditingExam((prev) => ({
+                                      ...prev,
+                                      date: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Date"
+                                />
+                              </TD>
+                              <TD>
+                                <Input
+                                  value={editingExam.time || ""}
+                                  onChange={(e) =>
+                                    setEditingExam((prev) => ({
+                                      ...prev,
+                                      time: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Time"
+                                />
+                              </TD>
+                              <TD>
+                                <Select
+                                  value={editingExam.branch || ""}
+                                  onChange={(e) =>
+                                    setEditingExam((prev) => ({
+                                      ...prev,
+                                      branch: e.target.value,
+                                    }))
+                                  }
                                 >
-                                  <FiCheck className="mx-auto" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingExam(null)}
-                                  className="flex-1 rounded-md border border-rose-300 bg-rose-50 px-2 py-1.5 text-xs text-rose-700"
-                                >
-                                  <FiX className="mx-auto" />
-                                </button>
-                              </div>
-                            </div>
+                                  <option value="">Select branch</option>
+                                  {BRANCH_OPTIONS.map((branch) => (
+                                    <option key={branch} value={branch}>
+                                      {branch}
+                                    </option>
+                                  ))}
+                                </Select>
+                              </TD>
+                              <TD>
+                                <Input
+                                  value={editingExam.courseCode || ""}
+                                  onChange={(e) =>
+                                    setEditingExam((prev) => ({
+                                      ...prev,
+                                      courseCode: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Code"
+                                />
+                              </TD>
+                              <TD>
+                                <Input
+                                  value={editingExam.courseName || ""}
+                                  onChange={(e) =>
+                                    setEditingExam((prev) => ({
+                                      ...prev,
+                                      courseName: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Course Name"
+                                />
+                              </TD>
+                              <TD className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    variant="success"
+                                    size="sm"
+                                    onClick={handleUpdateExam}
+                                    aria-label="Save row"
+                                  >
+                                    <FiCheck />
+                                  </Button>
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => setEditingExam(null)}
+                                    aria-label="Cancel edit"
+                                  >
+                                    <FiX />
+                                  </Button>
+                                </div>
+                              </TD>
+                            </>
                           ) : (
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 md:grid-cols-6">
-                                <p className="text-xs text-slate-700">
-                                  <span className="font-semibold">Day:</span>{" "}
-                                  {exam.day || "-"}
-                                </p>
-                                <p className="text-xs text-slate-700">
-                                  <span className="font-semibold">Date:</span>{" "}
-                                  {exam.date || "-"}
-                                </p>
-                                <p className="text-xs text-slate-700">
-                                  <span className="font-semibold">Time:</span>{" "}
-                                  {exam.time || "-"}
-                                </p>
-                                <p className="text-xs text-slate-700">
-                                  <span className="font-semibold">Branch:</span>{" "}
-                                  {exam.branch || "-"}
-                                </p>
-                                <p className="text-xs text-slate-700">
-                                  <span className="font-semibold">Code:</span>{" "}
-                                  {exam.courseCode || "-"}
-                                </p>
-                                <p className="text-xs text-slate-800 md:col-span-2">
-                                  <span className="font-semibold">Course:</span>{" "}
-                                  {exam.courseName || "-"}
-                                </p>
-                              </div>
-
-                              <div className="flex gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingExam(exam)}
-                                  className="rounded-md border border-sky-300 bg-sky-50 px-2 py-1.5 text-xs text-sky-700"
-                                >
-                                  <FiEdit2 />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteExam(exam.id)}
-                                  className="rounded-md border border-rose-300 bg-rose-50 px-2 py-1.5 text-xs text-rose-700"
-                                >
-                                  <FiTrash2 />
-                                </button>
-                              </div>
-                            </div>
+                            <>
+                              <TD>{exam.day || "-"}</TD>
+                              <TD>{exam.date || "-"}</TD>
+                              <TD>{exam.time || "-"}</TD>
+                              <TD>{exam.branch || "-"}</TD>
+                              <TD>{exam.courseCode || "-"}</TD>
+                              <TD>{exam.courseName || "-"}</TD>
+                              <TD className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => setEditingExam(exam)}
+                                    aria-label="Edit row"
+                                  >
+                                    <FiEdit2 />
+                                  </Button>
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => handleDeleteExam(exam.id)}
+                                    aria-label="Delete row"
+                                  >
+                                    <FiTrash2 />
+                                  </Button>
+                                </div>
+                              </TD>
+                            </>
                           )}
-                        </div>
+                        </TR>
+                      );
+                    })}
+                  </TBody>
+                </Table>
+              </TableWrap>
+            )}
+          </CardBody>
+        </Card>
+      ) : null}
+
+      {activeTab === "pdf" ? (
+        <div className="space-y-6 animate-fade-up">
+          <Card>
+            <CardHeader
+              title={`Upload Official Timetable PDF (${selectedYear} Year)`}
+              description="This PDF will be visible to students and teachers in their exam sections for this year."
+            />
+            <CardBody>
+              <label
+                htmlFor="exam-pdf-file"
+                className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-card border-2 border-dashed border-line bg-canvas px-6 py-8 text-center transition hover:border-brand-400"
+              >
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={handlePdfFileChange}
+                  className="hidden"
+                  id="exam-pdf-file"
+                />
+                <FiFileText className="h-6 w-6 text-brand-500" />
+                <p className="text-sm font-medium text-ink">
+                  {pdfFile ? pdfFile.name : "Click to select timetable PDF"}
+                </p>
+                <p className="text-xs text-ink-faint">
+                  Only PDF format is accepted for this tab.
+                </p>
+              </label>
+
+              <Button
+                className="mt-4"
+                onClick={handleUploadPdf}
+                disabled={!pdfFile || pdfUploading}
+                loading={pdfUploading}
+              >
+                {pdfUploading ? "Uploading PDF..." : "Upload PDF"}
+              </Button>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title={`Uploaded PDFs (${selectedYear} Year)`}
+              actions={
+                <Button variant="secondary" size="sm" onClick={fetchUploadedPdfs}>
+                  <FiRefreshCw /> Refresh
+                </Button>
+              }
+            />
+            <CardBody>
+              {uploadedPdfs.length === 0 ? (
+                <EmptyState
+                  icon={FiFileText}
+                  title="No timetable PDF uploaded yet"
+                  description="Upload an official timetable PDF to make it visible in student and teacher exam sections."
+                />
+              ) : (
+                <div className="space-y-2">
+                  {uploadedPdfs.map((pdf) => (
+                    <div
+                      key={pdf.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-line bg-canvas p-3"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-ink">
+                          {pdf.fileName || "exam-timetable.pdf"}
+                        </p>
+                        <p className="mt-1 text-xs text-ink-soft">
+                          Status:{" "}
+                          {pdf.active === false ? (
+                            <Badge tone="neutral">Inactive</Badge>
+                          ) : (
+                            <Badge tone="success">Active</Badge>
+                          )}
+                        </p>
                       </div>
+                      <a
+                        href={pdf.fileURL}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-8 items-center rounded-lg bg-brand-600 px-3 text-xs font-medium text-white transition-colors hover:bg-brand-700"
+                      >
+                        Open PDF
+                      </a>
                     </div>
                   ))}
                 </div>
               )}
-            </motion.div>
-          ) : null}
 
-          {activeTab === "pdf" ? (
-            <motion.div
-              key="upload-pdf"
-              initial={{ opacity: 0, x: 14 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -14 }}
-              className="space-y-5"
-            >
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
-                <h2 className="mb-3 text-lg font-semibold text-slate-800">
-                  Upload Official Timetable PDF ({selectedYear} Year)
-                </h2>
-                <p className="mb-4 text-sm text-slate-600">
-                  This PDF will be visible to students and teachers in their
-                  exam sections for this year.
+              {activePdf ? (
+                <p className="mt-3 text-xs text-emerald-700">
+                  Active PDF is visible in student and teacher exam sections.
                 </p>
+              ) : null}
+            </CardBody>
+          </Card>
+        </div>
+      ) : null}
 
-                <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={handlePdfFileChange}
-                    className="hidden"
-                    id="exam-pdf-file"
-                  />
-                  <label htmlFor="exam-pdf-file" className="cursor-pointer">
-                    <p className="text-sm font-medium text-slate-700">
-                      {pdfFile ? pdfFile.name : "Click to select timetable PDF"}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Only PDF format is accepted for this tab.
-                    </p>
-                  </label>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleUploadPdf}
-                  disabled={!pdfFile || pdfUploading}
-                  className="mt-4 rounded-lg bg-[#2f87d9] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-                >
-                  {pdfUploading ? "Uploading PDF..." : "Upload PDF"}
-                </button>
-              </div>
-
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold uppercase text-slate-600">
-                    Uploaded PDFs ({selectedYear} Year)
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={fetchUploadedPdfs}
-                    className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700"
-                  >
-                    <FiRefreshCw className="mr-1 inline" /> Refresh
-                  </button>
-                </div>
-
-                {uploadedPdfs.length === 0 ? (
-                  <p className="text-sm text-slate-500">
-                    No timetable PDF uploaded yet.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {uploadedPdfs.map((pdf) => (
-                      <div
-                        key={pdf.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-slate-800">
-                            {pdf.fileName || "exam-timetable.pdf"}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            Status:{" "}
-                            {pdf.active === false ? "Inactive" : "Active"}
-                          </p>
-                        </div>
-                        <a
-                          href={pdf.fileURL}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-md bg-[#2f87d9] px-3 py-1.5 text-xs font-medium text-white"
-                        >
-                          Open PDF
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {activePdf ? (
-                  <p className="mt-3 text-xs text-emerald-700">
-                    Active PDF is visible in student and teacher exam sections.
-                  </p>
-                ) : null}
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {showConfirmClear ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      <Modal
+        open={showConfirmClear}
+        onClose={() => setShowConfirmClear(false)}
+        title="Clear Year Timetable?"
+        footer={
+          <>
+            <Button
+              variant="secondary"
               onClick={() => setShowConfirmClear(false)}
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="mx-4 w-full max-w-md rounded-2xl bg-white p-6"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <h3 className="text-lg font-semibold text-slate-800">
-                  Clear Year Timetable?
-                </h3>
-                <p className="mt-2 text-sm text-slate-600">
-                  This will remove all exam rows for {selectedYear} year.
-                </p>
-
-                <div className="mt-5 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmClear(false)}
-                    className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleClearYearExams}
-                    className="flex-1 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white"
-                  >
-                    Clear
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleClearYearExams}>
+              Clear
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-ink-soft">
+          This will remove all exam rows for {selectedYear} year.
+        </p>
+      </Modal>
     </div>
   );
 }

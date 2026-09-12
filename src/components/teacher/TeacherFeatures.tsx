@@ -7,6 +7,30 @@ import {
   markAttendance,
   // @ts-ignore -- verbatim legacy import: utils/teacherUtils does not exist in the Vite repo either (component is not routed anywhere)
 } from "@/lib/client/teacherUtils";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import { Field, Input, Textarea } from "@/components/ui/Field";
+import Button from "@/components/ui/Button";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
+
+function Alert({ tone, children }) {
+  const tones = {
+    danger: "border-rose-200 bg-rose-50 text-rose-700",
+    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  };
+  return (
+    <div className={`mb-4 rounded-card border p-3 text-sm ${tones[tone]}`}>
+      {children}
+    </div>
+  );
+}
 
 // Component for uploading student marks
 export const MarksUploadComponent = ({ courseId, assignmentId }) => {
@@ -68,76 +92,66 @@ export const MarksUploadComponent = ({ courseId, assignmentId }) => {
   };
 
   return (
-    <div className="p-4 bg-white rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Upload Student Marks</h2>
+    <Card>
+      <CardHeader title="Upload Student Marks" />
+      <CardBody>
+        {error && <Alert tone="danger">{error}</Alert>}
+        {success && <Alert tone="success">Marks uploaded successfully!</Alert>}
 
-      {error && (
-        <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">{error}</div>
-      )}
-      {success && (
-        <div className="bg-green-100 text-green-700 p-2 mb-4 rounded">
-          Marks uploaded successfully!
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2 px-4 text-left">Student Name</th>
-                <th className="py-2 px-4 text-left">Marks</th>
-                <th className="py-2 px-4 text-left">Feedback</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student) => (
-                <tr key={student.id} className="border-b">
-                  <td className="py-2 px-4">{student.name}</td>
-                  <td className="py-2 px-4">
-                    <input
-                      type="number"
-                      value={student.marks}
-                      onChange={(e) =>
-                        handleInputChange(student.id, "marks", e.target.value)
-                      }
-                      className="border rounded p-1 w-24"
-                      min="0"
-                      max="100"
-                      required
-                    />
-                  </td>
-                  <td className="py-2 px-4">
-                    <textarea
-                      value={student.feedback}
-                      onChange={(e) =>
-                        handleInputChange(
-                          student.id,
-                          "feedback",
-                          e.target.value
-                        )
-                      }
-                      className="border rounded p-1 w-full"
-                      rows={2}
-                    />
-                  </td>
+        <form onSubmit={handleSubmit}>
+          <TableWrap>
+            <Table>
+              <THead>
+                <tr>
+                  <TH>Student Name</TH>
+                  <TH>Marks</TH>
+                  <TH>Feedback</TH>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </THead>
+              <TBody>
+                {students.map((student) => (
+                  <TR key={student.id}>
+                    <TD className="font-medium">{student.name}</TD>
+                    <TD>
+                      <Input
+                        type="number"
+                        value={student.marks}
+                        onChange={(e) =>
+                          handleInputChange(student.id, "marks", e.target.value)
+                        }
+                        className="w-24"
+                        min="0"
+                        max="100"
+                        required
+                      />
+                    </TD>
+                    <TD>
+                      <Textarea
+                        value={student.feedback}
+                        onChange={(e) =>
+                          handleInputChange(
+                            student.id,
+                            "feedback",
+                            e.target.value
+                          )
+                        }
+                        rows={2}
+                      />
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </TableWrap>
 
-        <div className="mt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
-          >
-            {loading ? "Uploading..." : "Upload Marks"}
-          </button>
-        </div>
-      </form>
-    </div>
+          <div className="mt-4">
+            <Button type="submit" disabled={loading} loading={loading}>
+              {loading ? "Uploading..." : "Upload Marks"}
+            </Button>
+          </div>
+        </form>
+      </CardBody>
+    </Card>
   );
 };
 
@@ -192,86 +206,70 @@ export const AssignmentCreatorComponent = ({ courseId }) => {
   };
 
   return (
-    <div className="p-4 bg-white rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Create New Assignment</h2>
+    <Card>
+      <CardHeader title="Create New Assignment" />
+      <CardBody>
+        {error && <Alert tone="danger">{error}</Alert>}
+        {success && (
+          <Alert tone="success">Assignment created successfully!</Alert>
+        )}
 
-      {error && (
-        <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">{error}</div>
-      )}
-      {success && (
-        <div className="bg-green-100 text-green-700 p-2 mb-4 rounded">
-          Assignment created successfully!
-        </div>
-      )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="Title">
+            <Input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+            />
+          </Field>
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block mb-1">Title</label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-            required
-          />
-        </div>
+          <Field label="Description">
+            <Textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={4}
+              required
+            />
+          </Field>
 
-        <div className="mb-4">
-          <label className="block mb-1">Description</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-            rows={4}
-            required
-          />
-        </div>
+          <Field label="Due Date">
+            <Input
+              type="datetime-local"
+              name="dueDate"
+              value={formData.dueDate}
+              onChange={handleChange}
+              required
+            />
+          </Field>
 
-        <div className="mb-4">
-          <label className="block mb-1">Due Date</label>
-          <input
-            type="datetime-local"
-            name="dueDate"
-            value={formData.dueDate}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-            required
-          />
-        </div>
+          <Field label="Total Marks">
+            <Input
+              type="number"
+              name="totalMarks"
+              value={formData.totalMarks}
+              onChange={handleChange}
+              min="0"
+              required
+            />
+          </Field>
 
-        <div className="mb-4">
-          <label className="block mb-1">Total Marks</label>
-          <input
-            type="number"
-            name="totalMarks"
-            value={formData.totalMarks}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-            min="0"
-            required
-          />
-        </div>
+          <Field label="Attachment (optional)">
+            <input
+              type="file"
+              onChange={handleFileChange}
+              className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm text-ink file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-1 file:text-brand-700"
+            />
+          </Field>
 
-        <div className="mb-4">
-          <label className="block mb-1">Attachment (optional)</label>
-          <input
-            type="file"
-            onChange={handleFileChange}
-            className="w-full border rounded p-2"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
-        >
-          {loading ? "Creating..." : "Create Assignment"}
-        </button>
-      </form>
-    </div>
+          <Button type="submit" disabled={loading} loading={loading}>
+            {loading ? "Creating..." : "Create Assignment"}
+          </Button>
+        </form>
+      </CardBody>
+    </Card>
   );
 };
 
@@ -332,61 +330,55 @@ export const AttendanceComponent = ({ courseId }) => {
   };
 
   return (
-    <div className="p-4 bg-white rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Mark Attendance</h2>
+    <Card>
+      <CardHeader title="Mark Attendance" />
+      <CardBody>
+        {error && <Alert tone="danger">{error}</Alert>}
+        {success && (
+          <Alert tone="success">Attendance marked successfully!</Alert>
+        )}
 
-      {error && (
-        <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">{error}</div>
-      )}
-      {success && (
-        <div className="bg-green-100 text-green-700 p-2 mb-4 rounded">
-          Attendance marked successfully!
-        </div>
-      )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="Date">
+            <Input
+              type="date"
+              value={date}
+              onChange={handleDateChange}
+              required
+            />
+          </Field>
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block mb-1">Date</label>
-          <input
-            type="date"
-            value={date}
-            onChange={handleDateChange}
-            className="w-full border rounded p-2"
-            required
-          />
-        </div>
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-ink">Students</h3>
 
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2">Students</h3>
-
-          <div className="space-y-2">
-            {students.map((student) => (
-              <div key={student.id} className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={student.present}
-                  onChange={(e) =>
-                    handleAttendanceChange(student.id, e.target.checked)
-                  }
-                  className="mr-2"
-                  id={`attendance-${student.id}`}
-                />
-                <label htmlFor={`attendance-${student.id}`}>
-                  {student.name}
-                </label>
-              </div>
-            ))}
+            <div className="space-y-2">
+              {students.map((student) => (
+                <div key={student.id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={student.present}
+                    onChange={(e) =>
+                      handleAttendanceChange(student.id, e.target.checked)
+                    }
+                    className="mr-2 h-4 w-4 rounded border-line text-brand-600"
+                    id={`attendance-${student.id}`}
+                  />
+                  <label
+                    htmlFor={`attendance-${student.id}`}
+                    className="text-sm text-ink"
+                  >
+                    {student.name}
+                  </label>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
-        >
-          {loading ? "Saving..." : "Mark Attendance"}
-        </button>
-      </form>
-    </div>
+          <Button type="submit" disabled={loading} loading={loading}>
+            {loading ? "Saving..." : "Mark Attendance"}
+          </Button>
+        </form>
+      </CardBody>
+    </Card>
   );
 };

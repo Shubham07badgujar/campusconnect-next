@@ -3,7 +3,9 @@
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "react-toastify";
+import { ScanFace } from "lucide-react";
 import { registerFaceProfile } from "@/lib/client/attendanceService";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 
 const FaceCameraCapture = dynamic(
   () => import("@/components/student/FaceCameraCapture"),
@@ -36,16 +38,27 @@ export default function FaceRegistration({ studentId, onRegistered }: any) {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <h3 className="text-sm font-semibold text-slate-700">Face Registration</h3>
-      <p className="mt-1 text-xs text-slate-500">
-        Register your face once to use face recognition for attendance.
-      </p>
-      <FaceCameraCapture
-        disabled={registering}
-        buttonLabel={registering ? "Registering..." : "Capture & Register Face"}
-        onDescriptor={handleDescriptor}
+    <Card>
+      <CardHeader
+        title={
+          <span className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
+              <ScanFace className="h-3.5 w-3.5" />
+            </span>
+            Face Registration
+          </span>
+        }
+        description="Register your face once to use face recognition for attendance."
       />
-    </div>
+      <CardBody>
+        <FaceCameraCapture
+          disabled={registering}
+          buttonLabel={
+            registering ? "Registering..." : "Capture & Register Face"
+          }
+          onDescriptor={handleDescriptor}
+        />
+      </CardBody>
+    </Card>
   );
 }

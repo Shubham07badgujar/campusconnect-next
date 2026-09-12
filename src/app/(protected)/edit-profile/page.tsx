@@ -5,17 +5,12 @@ import { auth, firestore } from "@/lib/client/firebase";
 import { useRouter } from "next/navigation";
 import { updateProfile } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { motion } from "framer-motion";
-import {
-  FiUser,
-  FiImage,
-  FiArrowLeft,
-  FiSave,
-  FiUpload,
-  FiBook,
-  FiHash,
-  FiBriefcase,
-} from "react-icons/fi";
+import { FiImage, FiSave, FiUpload } from "react-icons/fi";
+import PageHeader from "@/components/ui/PageHeader";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { Field, Input, Select } from "@/components/ui/Field";
+import Button from "@/components/ui/Button";
+import Avatar from "@/components/ui/Avatar";
 
 const API_URL = "";
 
@@ -282,80 +277,29 @@ function EditProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] px-3 py-6 sm:px-5 sm:py-8 lg:px-8">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6"
-      >
-        <div className="mb-6 text-center sm:mb-7">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-[#e9f2ff] sm:h-16 sm:w-16">
-            <FiUser className="h-7 w-7 text-[#2f87d9] sm:h-8 sm:w-8" />
-          </div>
-          <h1 className="mb-1 text-2xl font-semibold text-slate-800 sm:text-3xl">
-            Edit Your Profile
-          </h1>
-          <p className="text-sm text-slate-600">
-            Update your personal information
-          </p>
-        </div>
+    <div className="mx-auto w-full max-w-3xl animate-fade-up space-y-6">
+      <PageHeader
+        title="Edit Your Profile"
+        description="Update your personal information and profile picture."
+      />
 
-        <form onSubmit={handleUpdate} className="space-y-4 sm:space-y-5">
-          {photoPreview && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 flex justify-center"
-            >
-              <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100 shadow sm:h-24 sm:w-24">
-                <img
-                  src={photoPreview}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                  onError={(e: any) => {
-                    e.target.style.display = "none";
-                  }}
-                />
-              </div>
-            </motion.div>
-          )}
-
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <FiUser className="h-4 w-4 text-[#2f87d9]" />
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-[#2f87d9] focus:outline-none focus:ring-2 focus:ring-[#cfe5ff]"
-              placeholder="Enter your full name"
-              required
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <FiImage className="h-4 w-4 text-[#2f87d9]" />
-              Profile Picture
-            </label>
-            <div className="flex items-center gap-4">
-              <label className="flex-1 cursor-pointer">
-                <div className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 px-4 py-5 transition hover:border-[#2f87d9]">
-                  <FiUpload className="h-6 w-6 text-slate-400" />
-                  <span className="text-xs text-slate-600 sm:text-sm">
+      <form onSubmit={handleUpdate} className="space-y-6">
+        <Card>
+          <CardHeader title="Profile Picture" />
+          <CardBody>
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+              {photoPreview ? (
+                <Avatar name={name} src={photoPreview} size="xl" />
+              ) : (
+                <Avatar name={name} size="xl" />
+              )}
+              <label className="w-full flex-1 cursor-pointer">
+                <div className="flex w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-line px-4 py-5 transition hover:border-brand-500 hover:bg-brand-50/40">
+                  <FiUpload className="h-6 w-6 text-ink-faint" />
+                  <span className="text-sm text-ink-soft">
                     {photoFile ? photoFile.name : "Click to upload image"}
                   </span>
-                  <span className="text-[11px] text-slate-500">
+                  <span className="text-xs text-ink-faint">
                     JPG, PNG or GIF (Max 5MB)
                   </span>
                 </div>
@@ -367,198 +311,130 @@ function EditProfile() {
                 />
               </label>
             </div>
-          </motion.div>
+            <p className="mt-3 flex items-center gap-2 text-xs text-ink-faint">
+              <FiImage className="h-3.5 w-3.5" />
+              Tip: use a square image (1:1 ratio) for best results.
+            </p>
+          </CardBody>
+        </Card>
 
-          {userRole === "student" && (
-            <>
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-2 rounded-xl border border-amber-200 bg-amber-50 p-3"
-              >
-                <p className="flex items-center gap-2 text-xs text-amber-700 sm:text-sm">
-                  <span>⚠️</span>
-                  Academic information is managed by administrators and cannot
-                  be edited.
-                </p>
-              </motion.div>
+        <Card>
+          <CardHeader title="Account Information" />
+          <CardBody className="space-y-5">
+            <Field label="Full Name" htmlFor="name" required>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your full name"
+                required
+              />
+            </Field>
 
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  <FiHash className="h-4 w-4 text-emerald-600" />
-                  Roll Number
-                  <span className="ml-2 text-xs text-slate-400">
-                    (Read-only)
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  value={rollNumber || "Not assigned"}
-                  readOnly
-                  disabled
-                  className="w-full cursor-not-allowed rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-600"
-                />
-              </motion.div>
+            {userRole === "student" && (
+              <>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="flex items-center gap-2 text-sm text-amber-700">
+                    <span>⚠️</span>
+                    Academic information is managed by administrators and cannot
+                    be edited.
+                  </p>
+                </div>
 
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
-              >
-                <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  <FiBook className="h-4 w-4 text-[#2f87d9]" />
-                  Department
-                  <span className="ml-2 text-xs text-slate-400">
-                    (Read-only)
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  value={dept || "Not assigned"}
-                  readOnly
-                  disabled
-                  className="w-full cursor-not-allowed rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-600"
-                />
-              </motion.div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 }}
+                <Field
+                  label="Roll Number"
+                  htmlFor="rollNumber"
+                  hint="Read-only"
                 >
-                  <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                    Year
-                    <span className="text-xs text-slate-400">(Read-only)</span>
-                  </label>
-                  <input
+                  <Input
+                    id="rollNumber"
                     type="text"
-                    value={year ? `${year} Year` : "Not assigned"}
+                    value={rollNumber || "Not assigned"}
                     readOnly
                     disabled
-                    className="w-full cursor-not-allowed rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-600"
                   />
-                </motion.div>
+                </Field>
 
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                    Semester
-                    <span className="text-xs text-slate-400">(Read-only)</span>
-                  </label>
-                  <input
+                <Field label="Department" htmlFor="studentDept" hint="Read-only">
+                  <Input
+                    id="studentDept"
                     type="text"
-                    value={semester ? `Semester ${semester}` : "Not assigned"}
+                    value={dept || "Not assigned"}
                     readOnly
                     disabled
-                    className="w-full cursor-not-allowed rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-600"
                   />
-                </motion.div>
-              </div>
-            </>
-          )}
+                </Field>
 
-          {userRole === "teacher" && (
-            <>
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  <FiBriefcase className="h-4 w-4 text-emerald-600" />
-                  Employee ID
-                </label>
-                <input
-                  type="text"
-                  value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-[#2f87d9] focus:outline-none focus:ring-2 focus:ring-[#cfe5ff]"
-                  placeholder="Enter your employee ID"
-                />
-              </motion.div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Year" htmlFor="year" hint="Read-only">
+                    <Input
+                      id="year"
+                      type="text"
+                      value={year ? `${year} Year` : "Not assigned"}
+                      readOnly
+                      disabled
+                    />
+                  </Field>
 
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
-              >
-                <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  <FiBook className="h-4 w-4 text-[#2f87d9]" />
-                  Department
-                </label>
-                <select
-                  value={dept}
-                  onChange={(e) => setDept(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-[#2f87d9] focus:outline-none focus:ring-2 focus:ring-[#cfe5ff]"
-                >
-                  <option value="">Select Department</option>
-                  {departments.map((department) => (
-                    <option key={department} value={department}>
-                      {department}
-                    </option>
-                  ))}
-                </select>
-              </motion.div>
-            </>
-          )}
+                  <Field label="Semester" htmlFor="semester" hint="Read-only">
+                    <Input
+                      id="semester"
+                      type="text"
+                      value={semester ? `Semester ${semester}` : "Not assigned"}
+                      readOnly
+                      disabled
+                    />
+                  </Field>
+                </div>
+              </>
+            )}
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={() => router.push("/profile")}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-            >
-              <FiArrowLeft className="h-4 w-4" />
-              Cancel
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: loading ? 1 : 1.02 }}
-              whileTap={{ scale: loading ? 1 : 0.98 }}
-              type="submit"
-              disabled={loading || uploading}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                loading || uploading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-[#2f87d9] text-white hover:bg-[#1f6fb7]"
-              }`}
-            >
-              {loading || uploading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  {uploading ? "Uploading..." : "Saving..."}
-                </>
-              ) : (
-                <>
-                  <FiSave className="h-4 w-4" />
-                  Save Changes
-                </>
-              )}
-            </motion.button>
-          </div>
-        </form>
+            {userRole === "teacher" && (
+              <>
+                <Field label="Employee ID" htmlFor="employeeId">
+                  <Input
+                    id="employeeId"
+                    type="text"
+                    value={employeeId}
+                    onChange={(e) => setEmployeeId(e.target.value)}
+                    placeholder="Enter your employee ID"
+                  />
+                </Field>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-5 rounded-xl bg-[#f4f8ff] p-3"
-        >
-          <p className="text-center text-xs text-[#1f6fb7] sm:text-sm">
-            💡 <strong>Tip:</strong> Use a square image (1:1 ratio) for best
-            results
-          </p>
-        </motion.div>
-      </motion.div>
+                <Field label="Department" htmlFor="teacherDept">
+                  <Select
+                    id="teacherDept"
+                    value={dept}
+                    onChange={(e) => setDept(e.target.value)}
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map((department) => (
+                      <option key={department} value={department}>
+                        {department}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              </>
+            )}
+          </CardBody>
+        </Card>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => router.push("/profile")}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" loading={loading || uploading}>
+            <FiSave className="h-4 w-4" />
+            {uploading ? "Uploading..." : loading ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

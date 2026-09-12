@@ -14,24 +14,29 @@ import {
 } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FiBell,
-  FiPlus,
-  FiTrash2,
-  FiEdit3,
-  FiEye,
-  FiEyeOff,
-  FiSearch,
-  FiFilter,
-  FiCalendar,
-  FiAlertTriangle,
-  FiInfo,
-  FiRefreshCw,
-  FiUser,
-  FiX,
-  FiArrowLeft,
-} from "react-icons/fi";
-import { useRouter } from "next/navigation";
+  Megaphone,
+  Plus,
+  Trash2,
+  Pencil,
+  Eye,
+  EyeOff,
+  Search,
+  Filter,
+  Calendar,
+  AlertTriangle,
+  RefreshCw,
+  User,
+  CheckCircle2,
+} from "lucide-react";
 import AnnouncementForm from "@/components/common/AnnouncementForm";
+import PageHeader from "@/components/ui/PageHeader";
+import Button from "@/components/ui/Button";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import StatCard from "@/components/ui/StatCard";
+import Badge from "@/components/ui/Badge";
+import Modal from "@/components/ui/Modal";
+import { Field, Input, Select } from "@/components/ui/Field";
+import { EmptyState, ErrorState, PageLoader } from "@/components/ui/States";
 
 export default function AnnouncementManagement() {
   const [announcements, setAnnouncements] = useState([]);
@@ -164,16 +169,16 @@ export default function AnnouncementManagement() {
     return matchesSearch && matchesFilter;
   });
 
-  const getTypeColor = (type) => {
+  const getTypeTone = (type) => {
     switch (type) {
       case "urgent":
-        return "bg-red-100 text-red-800";
+        return "danger";
       case "event":
-        return "bg-green-100 text-green-800";
+        return "success";
       case "academic":
-        return "bg-blue-100 text-blue-800";
+        return "info";
       default:
-        return "bg-slate-100 text-slate-800";
+        return "neutral";
     }
   };
 
@@ -189,286 +194,228 @@ export default function AnnouncementManagement() {
       minute: "2-digit",
     }).format(date);
   };
-  const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] px-3 sm:px-4 md:px-6 py-4 md:py-6">
-      {/* Header */}
-      <div>
-        <div>
-          <button
-            onClick={() => router.push("/admin-dashboard")}
-            className="mb-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:px-4 sm:py-2 sm:text-sm"
-          >
-            <FiArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </button>
-        </div>
-
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 flex items-center">
-          <FiBell className="mr-3 text-[#2f87d9]" />
-          Announcement Management
-        </h1>
-        <p className="text-slate-600">
-          Create and manage important announcements for students and staff
-        </p>
-      </div>
-
-      {/* Error message */}
-      {error && (
-        <motion.div
-          className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center">
-            <FiAlertTriangle className="text-red-500 w-5 h-5 mr-2" />
-            <p className="text-red-700">{error}</p>
-          </div>
-          <button
-            onClick={() => setError("")}
-            className="text-red-500 text-sm mt-2 hover:underline"
-          >
-            Dismiss
-          </button>
-        </motion.div>
-      )}
-
-      {/* Control Panel */}
-      <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+    <div className="space-y-6">
+      <PageHeader
+        title="Announcement Management"
+        description="Create and manage important announcements for students and staff"
+        actions={
+          <Button
+            variant="primary"
             onClick={() => {
               setEditingAnnouncement(null);
               setShowForm(true);
             }}
-            className="bg-[#2f87d9] text-white py-2 px-6 rounded-lg flex items-center justify-center md:justify-start"
           >
-            <FiPlus className="mr-2" /> New Announcement
-          </motion.button>
+            <Plus className="mr-2 h-4 w-4" /> New Announcement
+          </Button>
+        }
+      />
 
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative">
-              <FiSearch className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search announcements..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-[#2f87d9]"
-              />
-            </div>
+      {/* Error message */}
+      {error && (
+        <ErrorState
+          title={error}
+          description="Please try again."
+          onRetry={() => setError("")}
+        />
+      )}
 
-            <div className="relative">
-              <FiFilter className="absolute left-3 top-3 text-gray-400" />
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-[#2f87d9] w-full"
-              >
-                <option value="all">All Announcements</option>
-                <option value="active">Active Only</option>
-                <option value="inactive">Inactive Only</option>
-                <option value="general">General</option>
-                <option value="urgent">Urgent</option>
-                <option value="event">Event</option>
-                <option value="academic">Academic</option>
-              </select>
-              <div className="absolute right-3 top-3 pointer-events-none">
-                <svg
-                  className="h-4 w-4 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 9l-7 7-7-7"
-                  ></path>
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-indigo-50 p-4 rounded-lg">
-            <div className="text-[#2f87d9] text-xs font-semibold uppercase tracking-wider mb-1">
-              Total
-            </div>
-            <div className="text-2xl font-bold text-slate-800">
-              {announcements.length}
-            </div>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="text-green-600 text-xs font-semibold uppercase tracking-wider mb-1">
-              Active
-            </div>
-            <div className="text-2xl font-bold text-slate-800">
-              {announcements.filter((a) => a.active).length}
-            </div>
-          </div>
-          <div className="bg-amber-50 p-4 rounded-lg">
-            <div className="text-amber-600 text-xs font-semibold uppercase tracking-wider mb-1">
-              Events
-            </div>
-            <div className="text-2xl font-bold text-slate-800">
-              {announcements.filter((a) => a.type === "event").length}
-            </div>
-          </div>
-          <div className="bg-red-50 p-4 rounded-lg">
-            <div className="text-red-600 text-xs font-semibold uppercase tracking-wider mb-1">
-              Urgent
-            </div>
-            <div className="text-2xl font-bold text-slate-800">
-              {announcements.filter((a) => a.type === "urgent").length}
-            </div>
-          </div>
-        </div>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard
+          label="Total"
+          value={announcements.length}
+          icon={Megaphone}
+          tone="brand"
+        />
+        <StatCard
+          label="Active"
+          value={announcements.filter((a) => a.active).length}
+          icon={CheckCircle2}
+          tone="success"
+        />
+        <StatCard
+          label="Events"
+          value={announcements.filter((a) => a.type === "event").length}
+          icon={Calendar}
+          tone="warning"
+        />
+        <StatCard
+          label="Urgent"
+          value={announcements.filter((a) => a.type === "urgent").length}
+          icon={AlertTriangle}
+          tone="danger"
+        />
       </div>
 
+      {/* Filters */}
+      <Card>
+        <CardBody>
+          <div className="flex flex-col gap-4 md:flex-row md:items-end">
+            <Field label="Search" className="flex-1">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+                <Input
+                  type="text"
+                  placeholder="Search announcements..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </Field>
+
+            <Field label="Filter" className="md:w-64">
+              <div className="relative">
+                <Filter className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+                <Select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="pl-9"
+                >
+                  <option value="all">All Announcements</option>
+                  <option value="active">Active Only</option>
+                  <option value="inactive">Inactive Only</option>
+                  <option value="general">General</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="event">Event</option>
+                  <option value="academic">Academic</option>
+                </Select>
+              </div>
+            </Field>
+          </div>
+        </CardBody>
+      </Card>
+
       {/* Announcements List */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-800 flex items-center">
-            <FiBell className="mr-2 text-indigo-500" />
-            All Announcements
-          </h2>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Megaphone className="h-5 w-5 text-brand-600" />
+          <h2 className="text-lg font-semibold text-ink">All Announcements</h2>
         </div>
 
         {loading ? (
-          <div className="p-12 flex flex-col items-center justify-center">
-            <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-            <p className="text-slate-500">Loading announcements...</p>
-          </div>
+          <PageLoader label="Loading announcements..." />
         ) : filteredAnnouncements.length === 0 ? (
-          <div className="p-12 text-center">
-            <div className="inline-flex rounded-full bg-slate-100 p-4">
-              <FiInfo className="h-6 w-6 text-slate-500" />
-            </div>
-            <h3 className="mt-5 text-base font-semibold text-slate-800">
-              No announcements found
-            </h3>
-            <p className="mt-1 text-slate-500">
-              {searchTerm || filter !== "all"
+          <EmptyState
+            title="No announcements found"
+            description={
+              searchTerm || filter !== "all"
                 ? "Try changing your search terms or filters"
-                : "Create a new announcement to get started"}
-            </p>
-            <div className="mt-6">
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setFilter("all");
-                }}
-                className="text-[#2f87d9] hover:text-indigo-500 flex items-center justify-center mx-auto"
-              >
-                <FiRefreshCw className="mr-2" /> Reset Filters
-              </button>
-            </div>
-          </div>
+                : "Create a new announcement to get started"
+            }
+            action={
+              searchTerm || filter !== "all" ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilter("all");
+                  }}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" /> Reset Filters
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
-          <ul className="divide-y divide-gray-200">
+          <div className="grid grid-cols-1 gap-4">
             <AnimatePresence>
               {filteredAnnouncements.map((announcement) => (
-                <motion.li
+                <motion.div
                   key={announcement.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="p-6 hover:bg-slate-50"
                 >
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div className="mb-4 md:mb-0 md:pr-4 flex-grow">
-                      <div className="flex items-center mb-2">
-                        <span
-                          className={`inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full mr-2 ${getTypeColor(
-                            announcement.type,
-                          )}`}
-                        >
-                          {announcement.type?.charAt(0).toUpperCase() +
-                            announcement.type?.slice(1) || "General"}
-                        </span>
-                        {!announcement.active && (
-                          <span className="inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800">
-                            Inactive
-                          </span>
-                        )}
+                  <Card className="animate-fade-up">
+                    <CardBody>
+                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div className="min-w-0 flex-grow md:pr-4">
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <Badge tone={getTypeTone(announcement.type)}>
+                              {announcement.type?.charAt(0).toUpperCase() +
+                                announcement.type?.slice(1) || "General"}
+                            </Badge>
+                            {!announcement.active && (
+                              <Badge tone="neutral">Inactive</Badge>
+                            )}
+                          </div>
+
+                          <h3 className="mb-1 text-lg font-semibold text-ink">
+                            {announcement.title}
+                          </h3>
+
+                          <p className="mb-2 line-clamp-2 text-ink-soft">
+                            {announcement.message}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-faint">
+                            <span className="inline-flex items-center">
+                              <Calendar className="mr-1 h-3.5 w-3.5" />
+                              Posted: {formatDate(announcement.createdAt)}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedAnnouncement(announcement);
+                                setShowReaders(true);
+                              }}
+                              className="inline-flex items-center transition-colors hover:text-brand-600"
+                            >
+                              <Eye className="mr-1 inline h-3.5 w-3.5" />
+                              {announcement.readBy?.length || 0} views
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant={announcement.active ? "secondary" : "success"}
+                            onClick={() =>
+                              toggleAnnouncementStatus(
+                                announcement.id,
+                                announcement.active,
+                              )
+                            }
+                            title={
+                              announcement.active ? "Deactivate" : "Activate"
+                            }
+                          >
+                            {announcement.active ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => editAnnouncement(announcement)}
+                            title="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => deleteAnnouncement(announcement.id)}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-
-                      <h3 className="text-lg font-semibold text-slate-800 mb-1">
-                        {announcement.title}
-                      </h3>
-
-                      <p className="text-slate-600 mb-2 line-clamp-2">
-                        {announcement.message}
-                      </p>
-                      <div className="flex items-center text-xs text-slate-500">
-                        <FiCalendar className="mr-1" />
-                        Posted: {formatDate(announcement.createdAt)}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedAnnouncement(announcement);
-                            setShowReaders(true);
-                          }}
-                          className="ml-4 flex items-center hover:text-[#2f87d9] transition-colors"
-                        >
-                          <FiEye className="inline mr-1" />
-                          {announcement.readBy?.length || 0} views
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2 justify-end">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() =>
-                          toggleAnnouncementStatus(
-                            announcement.id,
-                            announcement.active,
-                          )
-                        }
-                        className={`p-2 rounded-md ${
-                          announcement.active
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-green-50 text-green-700"
-                        }`}
-                        title={announcement.active ? "Deactivate" : "Activate"}
-                      >
-                        {announcement.active ? <FiEyeOff /> : <FiEye />}
-                      </motion.button>
-
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => editAnnouncement(announcement)}
-                        className="p-2 rounded-md bg-blue-50 text-blue-700"
-                        title="Edit"
-                      >
-                        <FiEdit3 />
-                      </motion.button>
-
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => deleteAnnouncement(announcement.id)}
-                        className="p-2 rounded-md bg-red-50 text-red-700"
-                        title="Delete"
-                      >
-                        <FiTrash2 />
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.li>
+                    </CardBody>
+                  </Card>
+                </motion.div>
               ))}
             </AnimatePresence>
-          </ul>
+          </div>
         )}
       </div>
 
@@ -479,7 +426,7 @@ export default function AnnouncementManagement() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           >
             <div className="w-full max-w-3xl">
               <AnnouncementForm
@@ -496,81 +443,40 @@ export default function AnnouncementManagement() {
       </AnimatePresence>
 
       {/* Modal for Readers List */}
-      <AnimatePresence>
-        {showReaders && selectedAnnouncement && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowReaders(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="border-b border-slate-200 p-4 flex items-center justify-between bg-indigo-600 text-white">
-                <div className="flex items-center">
-                  <FiUser className="w-5 h-5 mr-2" />
-                  <h2 className="text-lg font-semibold">
-                    Read by ({selectedAnnouncement.readBy?.length || 0}{" "}
-                    students)
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setShowReaders(false)}
-                  className="text-white hover:bg-white/20 rounded-full p-1"
-                >
-                  <FiX className="w-5 h-5" />
-                </button>
-              </div>
-
+      <Modal
+        open={showReaders && Boolean(selectedAnnouncement)}
+        onClose={() => setShowReaders(false)}
+        size="lg"
+        title={
+          <span className="inline-flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Read by ({selectedAnnouncement?.readBy?.length || 0} students)
+          </span>
+        }
+      >
+        {selectedAnnouncement?.readBy?.length > 0 ? (
+          <div className="space-y-2">
+            {getReadersData(selectedAnnouncement).map((user) => (
               <div
-                className="overflow-y-auto p-4"
-                style={{ maxHeight: "calc(80vh - 120px)" }}
+                key={user.id}
+                className="rounded-lg border border-line p-3 hover:bg-slate-50"
               >
-                {selectedAnnouncement.readBy?.length > 0 ? (
-                  <div className="space-y-2">
-                    {getReadersData(selectedAnnouncement).map((user) => (
-                      <div
-                        key={user.id}
-                        className="p-3 border border-slate-200 rounded-lg hover:bg-slate-50"
-                      >
-                        <div className="font-medium text-slate-800">
-                          {user.name}
-                        </div>
-                        <div className="text-slate-500 text-sm">
-                          {user.email}
-                        </div>
-                        {user.dept && (
-                          <div className="text-slate-500 text-sm">
-                            {user.dept}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
-                      <FiEye className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <h3 className="mt-2 text-lg font-medium text-gray-900">
-                      No readers yet
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      No students have read this announcement yet.
-                    </p>
-                  </div>
+                <div className="font-medium text-ink">{user.name}</div>
+                <div className="text-sm text-ink-soft">{user.email}</div>
+                {user.dept && (
+                  <div className="text-sm text-ink-soft">{user.dept}</div>
                 )}
               </div>
-            </motion.div>
-          </motion.div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Eye}
+            title="No readers yet"
+            description="No students have read this announcement yet."
+          />
         )}
-      </AnimatePresence>
+      </Modal>
     </div>
   );
 }

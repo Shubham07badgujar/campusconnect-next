@@ -2,6 +2,8 @@
 
 import React, { useMemo } from "react";
 import { QRCodeCanvas } from "qrcode.react";
+import { QrCode } from "lucide-react";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 
 export default function StudentQRDisplay({ studentInfo, studentId, prn }: any) {
   const normalizedStudent = studentInfo || {
@@ -36,22 +38,31 @@ export default function StudentQRDisplay({ studentInfo, studentId, prn }: any) {
   const payload = useMemo(() => JSON.stringify(payloadObject), [payloadObject]);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <h3 className="text-sm font-semibold text-slate-700">Profile QR Code</h3>
-      <p className="mt-1 text-xs text-slate-500">
-        Show this QR to your teacher if your biometric device is unavailable.
-      </p>
-      <div className="mt-4 flex justify-center">
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
-          <QRCodeCanvas value={payload} size={180} includeMargin />
+    <Card>
+      <CardHeader
+        title={
+          <span className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+              <QrCode className="h-3.5 w-3.5" />
+            </span>
+            Profile QR Code
+          </span>
+        }
+        description="Show this QR to your teacher if your biometric device is unavailable."
+      />
+      <CardBody>
+        <div className="flex justify-center">
+          <div className="rounded-xl border border-line bg-white p-3 shadow-card">
+            <QRCodeCanvas value={payload} size={180} includeMargin />
+          </div>
         </div>
-      </div>
-      <p className="mt-2 text-center text-xs text-slate-600">
-        PRN: {normalizedPrn || "-"}
-      </p>
-      <p className="mt-1 text-center text-xs text-slate-500 break-all">
-        UID: {payloadObject.studentId || "-"}
-      </p>
-    </div>
+        <p className="mt-3 text-center text-xs font-medium text-ink">
+          PRN: {normalizedPrn || "-"}
+        </p>
+        <p className="mt-1 break-all text-center text-xs text-ink-faint">
+          UID: {payloadObject.studentId || "-"}
+        </p>
+      </CardBody>
+    </Card>
   );
 }

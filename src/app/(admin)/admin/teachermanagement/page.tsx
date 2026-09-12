@@ -1,8 +1,22 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
-import { motion } from "framer-motion";
-import Button from "@/components/common/Button";
+import Button from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Modal from "@/components/ui/Modal";
+import { Field, Input, Select } from "@/components/ui/Field";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
+import { EmptyState } from "@/components/ui/States";
 import { firestore, auth } from "@/lib/client/firebase";
 import { FiRefreshCw, FiArrowLeft } from "react-icons/fi";
 import { useRouter } from "next/navigation";
@@ -365,349 +379,342 @@ const TeacherManagement = () => {
   }, [filteredTeachers]);
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-slate-800">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <button
+    <div className="space-y-6">
+      <PageHeader
+        title="Teacher Management"
+        description="Manage faculty records and their teaching assignments."
+        actions={
+          <Button
+            variant="secondary"
             onClick={() => router.push("/admin-dashboard")}
-            className="mb-1 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:px-4 sm:py-2 sm:text-sm"
           >
             <FiArrowLeft className="h-4 w-4" /> Back to Dashboard
-          </button>
+          </Button>
+        }
+      />
+
+      {error && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
         </div>
+      )}
+      {success && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {success}
+        </div>
+      )}
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
-          Teacher Management Panel
-        </h1>
-
-        {error && (
-          <div className="bg-red-100 text-red-700 border border-red-300 px-4 py-2 rounded mb-4">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="bg-green-100 text-green-700 border border-green-300 px-4 py-2 rounded mb-4">
-            {success}
-          </div>
-        )}
-
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 mb-4">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
-            <input
-              type="text"
-              placeholder="🔍 Search teacher by name, email or ID"
-              className="flex-grow border border-gray-300 rounded px-4 py-2 shadow-sm focus:outline-none focus:ring focus:border-indigo-500"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <Button onClick={fetchTeachers}>
-              <FiRefreshCw className="inline mr-2" />
-              Refresh
-            </Button>
-          </div>
-          <Button
-            onClick={() => setShowForm(!showForm)}
-            className="w-full sm:w-auto lg:ml-4"
-          >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full sm:max-w-md">
+          <Input
+            type="text"
+            placeholder="Search teacher by name, email or ID"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={fetchTeachers}>
+            <FiRefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+          <Button onClick={() => setShowForm(!showForm)}>
             {showForm ? "Close Form" : "Add Teacher"}
           </Button>
         </div>
+      </div>
 
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-white rounded shadow-lg p-6 mb-6"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <input
-                type="text"
-                placeholder="Name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="border px-3 py-2 rounded w-full"
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="border px-3 py-2 rounded w-full"
-              />
-              <input
-                type="text"
-                placeholder="Mobile Number"
-                value={formData.mobile}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    mobile: e.target.value.replace(/[^\d]/g, "").slice(0, 10),
-                  })
-                }
-                className="border px-3 py-2 rounded w-full"
-              />
-              <select
-                value={formData.jobProfile}
-                onChange={(e) =>
-                  setFormData({ ...formData, jobProfile: e.target.value })
-                }
-                className="border px-3 py-2 rounded w-full"
+      <Modal
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        title={isEditing ? "Edit Teacher" : "Add Teacher"}
+        description="Fill in the details and assign teaching load."
+        size="xl"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowForm(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              loading={isLoading}
+              disabled={isLoading}
+            >
+              {isLoading
+                ? "Saving..."
+                : isEditing
+                  ? "Update Teacher"
+                  : "Add Teacher"}
+            </Button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Name">
+            <Input
+              type="text"
+              placeholder="Name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Email">
+            <Input
+              type="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+            />
+          </Field>
+          <Field label="Mobile Number">
+            <Input
+              type="text"
+              placeholder="Mobile Number"
+              value={formData.mobile}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  mobile: e.target.value.replace(/[^\d]/g, "").slice(0, 10),
+                })
+              }
+            />
+          </Field>
+          <Field label="Job Profile">
+            <Select
+              value={formData.jobProfile}
+              onChange={(e) =>
+                setFormData({ ...formData, jobProfile: e.target.value })
+              }
+            >
+              <option value="">Select Job Profile</option>
+              {JOB_PROFILES.map((jobProfile) => (
+                <option key={jobProfile} value={jobProfile}>
+                  {jobProfile}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Department">
+            <Select
+              value={formData.department}
+              onChange={(e) =>
+                setFormData({ ...formData, department: e.target.value })
+              }
+            >
+              <option value="">Select Department</option>
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Teacher ID" hint="Auto-generated after save">
+            <Input
+              type="text"
+              placeholder="Teacher ID (Auto Generated)"
+              value={formData.employeeId || "Auto-generated after save"}
+              readOnly
+            />
+          </Field>
+        </div>
+
+        {formData.department && (
+          <div className="mt-6 border-t border-line pt-4">
+            <h3 className="mb-3 text-sm font-semibold text-ink">
+              Assign Teaching Load
+            </h3>
+
+            <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Select
+                value={currentBranch}
+                onChange={(e) => {
+                  setCurrentBranch(e.target.value);
+                  setCurrentSubjects([]);
+                }}
               >
-                <option value="">Select Job Profile</option>
-                {JOB_PROFILES.map((jobProfile) => (
-                  <option key={jobProfile} value={jobProfile}>
-                    {jobProfile}
+                <option value="">Select Branch</option>
+                {departments.map((branch) => (
+                  <option key={branch} value={branch}>
+                    {branch}
                   </option>
                 ))}
-              </select>
-              <select
-                value={formData.department}
-                onChange={(e) =>
-                  setFormData({ ...formData, department: e.target.value })
-                }
-                className="border px-3 py-2 rounded w-full"
+              </Select>
+
+              <Select
+                value={currentYear}
+                onChange={(e) => {
+                  setCurrentYear(e.target.value);
+                  setCurrentSubjects([]);
+                }}
               >
-                <option value="">Select Department</option>
-                {departments.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
+                <option value="">Select Year</option>
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year} Year
                   </option>
                 ))}
-              </select>
-              <input
-                type="text"
-                placeholder="Teacher ID (Auto Generated)"
-                value={formData.employeeId || "Auto-generated after save"}
-                readOnly
-                className="border px-3 py-2 rounded w-full bg-slate-100 text-slate-600"
-              />
+              </Select>
+
+              <Button
+                variant="secondary"
+                onClick={handleAddYearSubjects}
+                disabled={
+                  !currentBranch ||
+                  !currentYear ||
+                  currentSubjects.length === 0
+                }
+              >
+                Add Assignment
+              </Button>
             </div>
 
-            {formData.department && (
-              <div className="border-t pt-4 mb-6">
-                <h3 className="text-lg font-semibold mb-3">
-                  Assign Teaching Load
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                  <select
-                    value={currentBranch}
-                    onChange={(e) => {
-                      setCurrentBranch(e.target.value);
-                      setCurrentSubjects([]);
-                    }}
-                    className="border px-3 py-2 rounded w-full"
-                  >
-                    <option value="">Select Branch</option>
-                    {departments.map((branch) => (
-                      <option key={branch} value={branch}>
-                        {branch}
-                      </option>
+            {currentBranch && currentYear && (
+              <div className="mb-4 rounded-lg border border-line bg-slate-50 p-4">
+                <h4 className="mb-2 text-sm font-medium text-ink">
+                  Select Subjects for {currentBranch} - {currentYear} Year:
+                </h4>
+                {loadingSubjects ? (
+                  <p className="text-sm text-ink-soft">Loading subjects...</p>
+                ) : availableSubjects.length === 0 ? (
+                  <p className="text-sm text-danger">
+                    No subjects found for the selected branch and year.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {availableSubjects.map((subject) => (
+                      <label
+                        key={subject}
+                        className="flex items-center gap-2 text-sm text-ink"
+                      >
+                        <input
+                          type="checkbox"
+                          value={subject}
+                          checked={currentSubjects.includes(subject)}
+                          onChange={(e) =>
+                            handleSubjectChange(subject, e.target.checked)
+                          }
+                          className="h-4 w-4 rounded border-line text-brand-600 focus:ring-brand-500"
+                        />
+                        <span>{subject}</span>
+                      </label>
                     ))}
-                  </select>
-
-                  <select
-                    value={currentYear}
-                    onChange={(e) => {
-                      setCurrentYear(e.target.value);
-                      setCurrentSubjects([]);
-                    }}
-                    className="border px-3 py-2 rounded w-full"
-                  >
-                    <option value="">Select Year</option>
-                    {years.map((year) => (
-                      <option key={year} value={year}>
-                        {year} Year
-                      </option>
-                    ))}
-                  </select>
-
-                  <Button
-                    variant="outline"
-                    onClick={handleAddYearSubjects}
-                    disabled={
-                      !currentBranch ||
-                      !currentYear ||
-                      currentSubjects.length === 0
-                    }
-                  >
-                    Add Assignment
-                  </Button>
-                </div>
-
-                {currentBranch && currentYear && (
-                  <div className="mb-4 border p-4 rounded bg-slate-50">
-                    <h4 className="font-medium mb-2">
-                      Select Subjects for {currentBranch} - {currentYear} Year:
-                    </h4>
-                    {loadingSubjects ? (
-                      <p className="text-sm text-slate-500">
-                        Loading subjects...
-                      </p>
-                    ) : availableSubjects.length === 0 ? (
-                      <p className="text-sm text-red-500">
-                        No subjects found for the selected branch and year.
-                      </p>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {availableSubjects.map((subject) => (
-                          <label
-                            key={subject}
-                            className="flex items-center space-x-2"
-                          >
-                            <input
-                              type="checkbox"
-                              value={subject}
-                              checked={currentSubjects.includes(subject)}
-                              onChange={(e) =>
-                                handleSubjectChange(subject, e.target.checked)
-                              }
-                              className="form-checkbox h-5 w-5 text-[#2f87d9]"
-                            />
-                            <span>{subject}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {formData.assignments.length > 0 && (
-                  <div className="mb-4 border p-4 rounded bg-blue-50">
-                    <h4 className="font-medium mb-2">Current Assignments:</h4>
-                    <div className="space-y-4">
-                      {formData.assignments.map((assignment, idx) => (
-                        <label
-                          key={`${assignment.branch}-${assignment.year}-${idx}`}
-                          className="block border-b pb-2"
-                        >
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-semibold">
-                              {assignment.branch} - {assignment.year} Year
-                            </span>
-                            <button
-                              onClick={() => handleRemoveAssignment(idx)}
-                              className="text-red-500 hover:text-red-700 text-sm"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                          <div className="pl-4">
-                            <span className="text-sm">Subjects: </span>
-                            <span className="text-sm font-medium">
-                              {assignment.subjects.join(", ")}
-                            </span>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
                   </div>
                 )}
               </div>
             )}
 
-            <div className="mt-4">
-              <Button onClick={handleSubmit} disabled={isLoading}>
-                {isLoading
-                  ? "Saving..."
-                  : isEditing
-                    ? "Update Teacher"
-                    : "Add Teacher"}
-              </Button>
-            </div>
-          </motion.div>
-        )}
-
-        <motion.div
-          className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200/80 mt-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.4, type: "spring", stiffness: 120 }}
-        >
-          <div className="overflow-x-auto rounded-lg border border-slate-200/80">
-            <table className="w-full text-sm divide-y divide-gray-100">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="p-2 text-left font-semibold text-slate-600">
-                    Name
-                  </th>
-                  <th className="p-2 text-left font-semibold text-slate-600">
-                    Mobile
-                  </th>
-                  <th className="p-2 text-left font-semibold text-slate-600">
-                    Email
-                  </th>
-                  <th className="p-2 text-left font-semibold text-slate-600">
-                    Department
-                  </th>
-                  <th className="p-2 text-left font-semibold text-slate-600">
-                    Teacher ID
-                  </th>
-                  <th className="p-2 text-left font-semibold text-slate-600">
-                    Job Profile
-                  </th>
-                  <th className="p-2 text-center font-semibold text-slate-600">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedTeachers.length > 0 ? (
-                  sortedTeachers.map((teacher) => (
-                    <tr
-                      key={teacher.id}
-                      className="border-b hover:bg-slate-50 transition"
+            {formData.assignments.length > 0 && (
+              <div className="mb-2 rounded-lg border border-brand-200 bg-brand-50 p-4">
+                <h4 className="mb-2 text-sm font-medium text-ink">
+                  Current Assignments:
+                </h4>
+                <div className="space-y-4">
+                  {formData.assignments.map((assignment, idx) => (
+                    <label
+                      key={`${assignment.branch}-${assignment.year}-${idx}`}
+                      className="block border-b border-line pb-2"
                     >
-                      <td className="p-2 whitespace-nowrap">{teacher.name}</td>
-                      <td className="p-2 whitespace-nowrap">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-ink">
+                          {assignment.branch} - {assignment.year} Year
+                        </span>
+                        <button
+                          onClick={() => handleRemoveAssignment(idx)}
+                          className="text-sm text-danger hover:text-rose-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="pl-4">
+                        <span className="text-sm text-ink-soft">Subjects: </span>
+                        <span className="text-sm font-medium text-ink">
+                          {assignment.subjects.join(", ")}
+                        </span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      <Card className="animate-fade-up">
+        <CardHeader
+          title="All Teachers"
+          actions={<Badge tone="brand">{sortedTeachers.length} total</Badge>}
+        />
+        <CardBody>
+          {sortedTeachers.length > 0 ? (
+            <TableWrap>
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Name</TH>
+                    <TH>Mobile</TH>
+                    <TH>Email</TH>
+                    <TH>Department</TH>
+                    <TH>Teacher ID</TH>
+                    <TH>Job Profile</TH>
+                    <TH className="text-center">Actions</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {sortedTeachers.map((teacher) => (
+                    <TR key={teacher.id}>
+                      <TD className="whitespace-nowrap font-medium text-ink">
+                        {teacher.name}
+                      </TD>
+                      <TD className="whitespace-nowrap">
                         {teacher.mobile || teacher.phone || "-"}
-                      </td>
-                      <td className="p-2 whitespace-nowrap">{teacher.email}</td>
-                      <td className="p-2 whitespace-nowrap">
+                      </TD>
+                      <TD className="whitespace-nowrap">{teacher.email}</TD>
+                      <TD className="whitespace-nowrap">
                         {teacher.department || teacher.dept || "-"}
-                      </td>
-                      <td className="p-2 whitespace-nowrap">
+                      </TD>
+                      <TD className="whitespace-nowrap">
                         {teacher.teacherId || teacher.employeeId || "-"}
-                      </td>
-                      <td className="p-2 whitespace-nowrap">
+                      </TD>
+                      <TD className="whitespace-nowrap">
                         {teacher.jobProfile || "-"}
-                      </td>
-                      <td className="p-2">
-                        <div className="flex justify-center items-center gap-2">
+                      </TD>
+                      <TD>
+                        <div className="flex items-center justify-center gap-2">
                           <Button
-                            variant="outline"
+                            variant="secondary"
+                            size="sm"
                             onClick={() => handleEdit(teacher)}
                           >
                             Edit
                           </Button>
                           <Button
-                            variant="destructive"
+                            variant="danger"
+                            size="sm"
                             onClick={() => handleDelete(teacher.id)}
                           >
                             Delete
                           </Button>
                         </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="text-center p-6 text-slate-500">
-                      No teachers found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
-      </div>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </TableWrap>
+          ) : (
+            <EmptyState
+              title="No teachers found"
+              description="Add a teacher to get started."
+            />
+          )}
+        </CardBody>
+      </Card>
     </div>
   );
 };

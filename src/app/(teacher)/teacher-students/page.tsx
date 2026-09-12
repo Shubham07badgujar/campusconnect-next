@@ -3,14 +3,23 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { auth, firestore } from "@/lib/client/firebase";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
-import {
-  FiArrowLeft,
-  FiUsers,
-  FiBookOpen,
-  FiSearch,
-  FiDownload,
-} from "react-icons/fi";
+import { Users, BookOpen, Search, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
+import PageHeader from "@/components/ui/PageHeader";
+import { Card, CardBody } from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Field";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
+import { PageLoader, EmptyState, ErrorState } from "@/components/ui/States";
 
 const normalizeAssignments = (teacherData) => {
   if (
@@ -356,190 +365,177 @@ export default function TeacherStudents() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-blue-100 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        <button
-          onClick={() => router.push("/teacher-dashboard")}
-          className="mb-4 inline-flex items-center gap-2 text-blue-700 hover:text-blue-900"
-        >
-          <FiArrowLeft /> Back to Dashboard
-        </button>
+    <div className="space-y-6">
+      <PageHeader
+        title="Students by Assigned Subject"
+        description={`${teacherName}, select an assigned branch-year-subject load to view matching students.`}
+      />
 
-        <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-5 sm:p-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-blue-800">
-            Students by Assigned Subject
-          </h1>
-          <p className="text-gray-600 mt-1">
-            {teacherName}, select an assigned branch-year-subject load to view
-            matching students.
-          </p>
+      {error ? <ErrorState title="Unable to load students" description={error} /> : null}
 
-          {error && <p className="mt-4 text-red-600">{error}</p>}
-
-          {loading ? (
-            <p className="mt-6 text-gray-600">Loading assigned students...</p>
-          ) : assignments.length === 0 ? (
-            <p className="mt-6 text-gray-600">
-              No teaching assignments found on your profile.
-            </p>
-          ) : (
-            <>
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {assignments.map((assignment, index) => {
-                  const isActive = index === selectedAssignmentIndex;
-                  return (
-                    <button
-                      key={`${assignment.branch}-${assignment.year}-${index}`}
-                      onClick={() => setSelectedAssignmentIndex(index)}
-                      className={`text-left rounded-lg border p-3 transition ${
-                        isActive
-                          ? "border-blue-500 bg-blue-50 shadow"
-                          : "border-gray-200 bg-white hover:border-blue-300"
-                      }`}
-                    >
-                      <div className="font-semibold text-gray-800">
-                        {assignment.branch} - {assignment.year} Year
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1 line-clamp-2">
-                        {assignment.subjects.join(", ")}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <FiBookOpen />
-                  {selectedAssignment?.branch} - {selectedAssignment?.year} Year
-                </div>
-                <div className="relative w-full sm:w-80">
-                  <FiSearch className="absolute left-3 top-3 text-gray-400" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search by name or PRN"
-                    className="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 inline-flex items-center gap-2">
-                <FiUsers /> {matchedStudents.length} students found for selected
-                assignment
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
+      {loading ? (
+        <PageLoader label="Loading assigned students..." />
+      ) : assignments.length === 0 ? (
+        <EmptyState
+          icon={BookOpen}
+          title="No teaching assignments"
+          description="No teaching assignments were found on your profile."
+        />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {assignments.map((assignment, index) => {
+              const isActive = index === selectedAssignmentIndex;
+              return (
                 <button
-                  type="button"
-                  onClick={exportSelectedCsv}
-                  disabled={selectedStudentIds.length === 0}
-                  className="inline-flex items-center gap-2 bg-emerald-600 text-white px-3 py-2 rounded disabled:opacity-50"
+                  key={`${assignment.branch}-${assignment.year}-${index}`}
+                  onClick={() => setSelectedAssignmentIndex(index)}
+                  className={`rounded-card border p-4 text-left shadow-card transition ${
+                    isActive
+                      ? "border-brand-500 bg-brand-50 ring-1 ring-brand-200"
+                      : "border-line bg-surface hover:border-brand-300"
+                  }`}
                 >
-                  <FiDownload /> Export Selected CSV
+                  <div className="text-sm font-semibold text-ink">
+                    {assignment.branch} - {assignment.year} Year
+                  </div>
+                  <div className="mt-1 line-clamp-2 text-xs text-ink-soft">
+                    {assignment.subjects.join(", ")}
+                  </div>
                 </button>
-                <button
-                  type="button"
-                  onClick={exportSelectedPdf}
-                  disabled={selectedStudentIds.length === 0}
-                  className="inline-flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded disabled:opacity-50"
-                >
-                  <FiDownload /> Export Selected PDF
-                </button>
-              </div>
+              );
+            })}
+          </div>
 
-              <div className="mt-4 overflow-x-auto border rounded-lg bg-white">
-                <table className="w-full min-w-[1500px] text-sm">
-                  <thead className="bg-blue-50 text-gray-700">
-                    <tr>
-                      <th className="p-3 text-left">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Badge tone="brand">
+              <BookOpen className="h-3.5 w-3.5" />
+              {selectedAssignment?.branch} - {selectedAssignment?.year} Year
+            </Badge>
+            <div className="relative w-full sm:w-80">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+              <Input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or PRN"
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Badge tone="neutral">
+              <Users className="h-3.5 w-3.5" />
+              {matchedStudents.length} students found for selected assignment
+            </Badge>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="success"
+                size="sm"
+                onClick={exportSelectedCsv}
+                disabled={selectedStudentIds.length === 0}
+              >
+                <Download className="h-3.5 w-3.5" /> Export Selected CSV
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={exportSelectedPdf}
+                disabled={selectedStudentIds.length === 0}
+              >
+                <Download className="h-3.5 w-3.5" /> Export Selected PDF
+              </Button>
+            </div>
+          </div>
+
+          {matchedStudents.length > 0 ? (
+            <TableWrap>
+              <Table>
+                <THead>
+                  <tr>
+                    <TH>
+                      <input
+                        type="checkbox"
+                        checked={
+                          matchedStudents.length > 0 &&
+                          selectedStudentIds.length === matchedStudents.length
+                        }
+                        onChange={toggleSelectAll}
+                      />
+                    </TH>
+                    <TH>Student Name</TH>
+                    <TH>PRN</TH>
+                    <TH>Roll No</TH>
+                    <TH>Login Email</TH>
+                    <TH>Contact Email</TH>
+                    <TH>Mobile</TH>
+                    <TH>Department</TH>
+                    <TH>Year</TH>
+                    <TH>Semester</TH>
+                    <TH>Division</TH>
+                    <TH>All Subjects</TH>
+                    <TH>Matched Subjects</TH>
+                    <TH>Export</TH>
+                  </tr>
+                </THead>
+                <TBody>
+                  {matchedStudents.map((student) => (
+                    <TR key={student.uid}>
+                      <TD>
                         <input
                           type="checkbox"
-                          checked={
-                            matchedStudents.length > 0 &&
-                            selectedStudentIds.length === matchedStudents.length
-                          }
-                          onChange={toggleSelectAll}
+                          checked={selectedStudentIds.includes(student.uid)}
+                          onChange={() => toggleSelectStudent(student.uid)}
                         />
-                      </th>
-                      <th className="p-3 text-left">Student Name</th>
-                      <th className="p-3 text-left">PRN</th>
-                      <th className="p-3 text-left">Roll No</th>
-                      <th className="p-3 text-left">Login Email</th>
-                      <th className="p-3 text-left">Contact Email</th>
-                      <th className="p-3 text-left">Mobile</th>
-                      <th className="p-3 text-left">Department</th>
-                      <th className="p-3 text-left">Year</th>
-                      <th className="p-3 text-left">Semester</th>
-                      <th className="p-3 text-left">Division</th>
-                      <th className="p-3 text-left">All Subjects</th>
-                      <th className="p-3 text-left">Matched Subjects</th>
-                      <th className="p-3 text-left">Export</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {matchedStudents.length > 0 ? (
-                      matchedStudents.map((student) => (
-                        <tr key={student.uid} className="border-t">
-                          <td className="p-3">
-                            <input
-                              type="checkbox"
-                              checked={selectedStudentIds.includes(student.uid)}
-                              onChange={() => toggleSelectStudent(student.uid)}
-                            />
-                          </td>
-                          <td className="p-3">{student.name}</td>
-                          <td className="p-3">{student.prn}</td>
-                          <td className="p-3">{student.rollNo}</td>
-                          <td className="p-3">{student.email}</td>
-                          <td className="p-3">{student.contactEmail}</td>
-                          <td className="p-3">{student.mobile}</td>
-                          <td className="p-3">{student.department}</td>
-                          <td className="p-3">{student.year}</td>
-                          <td className="p-3">{student.semester}</td>
-                          <td className="p-3">{student.division}</td>
-                          <td className="p-3">{student.subjects.join(", ")}</td>
-                          <td className="p-3">
-                            {student.matchedSubjects.join(", ")}
-                          </td>
-                          <td className="p-3 whitespace-nowrap">
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => exportSingleCsv(student)}
-                                className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded"
-                              >
-                                CSV
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => exportSinglePdf(student)}
-                                className="px-2 py-1 text-xs bg-indigo-100 text-indigo-700 rounded"
-                              >
-                                PDF
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          className="p-6 text-center text-gray-500"
-                          colSpan={14}
-                        >
-                          No students match the selected subject assignment.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </>
+                      </TD>
+                      <TD className="font-medium">{student.name}</TD>
+                      <TD>{student.prn}</TD>
+                      <TD>{student.rollNo}</TD>
+                      <TD>{student.email}</TD>
+                      <TD>{student.contactEmail}</TD>
+                      <TD>{student.mobile}</TD>
+                      <TD>{student.department}</TD>
+                      <TD>{student.year}</TD>
+                      <TD>{student.semester}</TD>
+                      <TD>{student.division}</TD>
+                      <TD>{student.subjects.join(", ")}</TD>
+                      <TD>{student.matchedSubjects.join(", ")}</TD>
+                      <TD className="whitespace-nowrap">
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => exportSingleCsv(student)}
+                          >
+                            CSV
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => exportSinglePdf(student)}
+                          >
+                            PDF
+                          </Button>
+                        </div>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </TableWrap>
+          ) : (
+            <EmptyState
+              icon={Users}
+              title="No matching students"
+              description="No students match the selected subject assignment."
+            />
           )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

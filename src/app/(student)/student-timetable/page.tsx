@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FiArrowLeft, FiFilter } from "react-icons/fi";
+import { SlidersHorizontal, Clock, User } from "lucide-react";
 import {
   collection,
   getDocs,
@@ -14,6 +14,20 @@ import {
 import { firestore, auth } from "@/lib/client/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { toast } from "react-toastify";
+import PageHeader from "@/components/ui/PageHeader";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { Field, Input, Select } from "@/components/ui/Field";
+import Badge from "@/components/ui/Badge";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
+import { PageLoader, EmptyState } from "@/components/ui/States";
 
 const StudentTimetable = () => {
   const [user] = useAuthState(auth);
@@ -141,141 +155,110 @@ const StudentTimetable = () => {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto p-4 text-center">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </div>
-    );
+    return <PageLoader label="Loading timetable..." />;
   }
 
   return (
-    <div className="container mx-auto px-3 sm:px-4 py-4 max-w-7xl">
-      <button
-        onClick={() => router.push("/student-dashboard")}
-        className="flex items-center mb-6 text-blue-600 hover:text-blue-800 transition-colors"
-      >
-        <FiArrowLeft className="mr-2" />
-        Back to Dashboard
-      </button>
+    <div className="space-y-6">
+      <PageHeader
+        title="Class Timetable"
+        description="View your class schedule for the week."
+      />
 
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold">Class Timetable</h1>
-        <p className="text-gray-600 mt-1">
-          View your class schedule for the week
-        </p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <FiFilter className="text-gray-600" />
-          <h3 className="font-semibold">Applied Filters</h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Branch</label>
-            <input
-              type="text"
-              value={filterBranch}
-              readOnly
-              className="w-full p-2 border rounded-lg bg-gray-100"
-            />
+      <Card>
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+              </span>
+              Applied Filters
+            </span>
+          }
+          actions={
+            <Badge tone="brand">{classes.length} class(es)</Badge>
+          }
+        />
+        <CardBody>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Field label="Branch" htmlFor="tt-branch">
+              <Input id="tt-branch" type="text" value={filterBranch} readOnly />
+            </Field>
+            <Field label="Year" htmlFor="tt-year">
+              <Input id="tt-year" type="text" value={filterYear} readOnly />
+            </Field>
+            <Field label="Semester" htmlFor="tt-semester">
+              <Select
+                id="tt-semester"
+                value={filterSemester}
+                onChange={(e) => setFilterSemester(e.target.value)}
+              >
+                <option value="">Select semester</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+              </Select>
+            </Field>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Year</label>
-            <input
-              type="text"
-              value={filterYear}
-              readOnly
-              className="w-full p-2 border rounded-lg bg-gray-100"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Semester</label>
-            <select
-              value={filterSemester}
-              onChange={(e) => setFilterSemester(e.target.value)}
-              className="w-full p-2 border rounded-lg"
-            >
-              <option value="">Select semester</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-            </select>
-          </div>
-        </div>
+        </CardBody>
+      </Card>
 
-        <div className="mt-3 text-sm text-gray-600">
-          Showing {classes.length} class(es)
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] border-collapse">
-            <thead>
-              <tr className="bg-gradient-to-r from-green-600 to-green-700 text-white">
-                <th className="p-3 text-left font-semibold border border-green-500">
-                  Time
-                </th>
+      {classes.length === 0 ? (
+        <EmptyState
+          icon={Clock}
+          title="No classes found for your current profile"
+          description="Contact your teachers if timetable slots are not published yet."
+        />
+      ) : (
+        <TableWrap>
+          <Table className="min-w-[820px]">
+            <THead>
+              <TR className="hover:bg-transparent">
+                <TH className="text-left">Time</TH>
                 {days.map((day) => (
-                  <th
-                    key={day}
-                    className="p-3 text-center font-semibold border border-green-500 min-w-[150px]"
-                  >
+                  <TH key={day} className="min-w-[150px] text-center">
                     {day}
-                  </th>
+                  </TH>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TR>
+            </THead>
+            <TBody>
               {timeSlots.map((timeSlot) => (
-                <tr key={timeSlot} className="border-b hover:bg-gray-50">
-                  <td className="p-3 font-medium text-gray-700 bg-gray-50 border">
+                <TR key={timeSlot}>
+                  <TD className="bg-slate-50/70 font-medium text-ink-soft">
                     {timeSlot}
-                  </td>
+                  </TD>
                   {days.map((day) => {
                     const slotClasses = getClassesForSlot(day, timeSlot);
                     return (
-                      <td key={day} className="p-2 border">
+                      <TD key={day} className="align-top">
                         {slotClasses.map((classItem: any) => (
                           <div
                             key={classItem.id}
-                            className={`${getColorForSubject(classItem.subjectName || classItem.subject)} p-2 rounded-lg mb-1 border-l-4`}
+                            className={`${getColorForSubject(classItem.subjectName || classItem.subject)} mb-1 rounded-lg border-l-4 p-2`}
                           >
-                            <div className="font-semibold text-sm">
+                            <div className="text-sm font-semibold">
                               {classItem.subjectName || classItem.subject}
                             </div>
-                            <div className="text-xs mt-1">
+                            <div className="mt-1 flex items-center gap-1 text-xs">
+                              <Clock className="h-3 w-3" />
                               {classItem.startTime} - {classItem.endTime}
                             </div>
                             {classItem.teacherName && (
-                              <div className="text-xs">
-                                👨‍🏫 {classItem.teacherName}
+                              <div className="mt-0.5 flex items-center gap-1 text-xs">
+                                <User className="h-3 w-3" />
+                                {classItem.teacherName}
                               </div>
                             )}
                           </div>
                         ))}
-                      </td>
+                      </TD>
                     );
                   })}
-                </tr>
+                </TR>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {classes.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg mt-6">
-          <p className="text-gray-600 text-lg">
-            No classes found for your current profile.
-          </p>
-          <p className="text-gray-500 text-sm mt-2">
-            Contact your teachers if timetable slots are not published yet.
-          </p>
-        </div>
+            </TBody>
+          </Table>
+        </TableWrap>
       )}
     </div>
   );

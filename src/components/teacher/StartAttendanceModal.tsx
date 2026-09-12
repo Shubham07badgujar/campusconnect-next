@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Modal from "@/components/ui/Modal";
+import { Field, Input, Select } from "@/components/ui/Field";
+import Button from "@/components/ui/Button";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const getDayFromDate = (dateValue) => {
@@ -49,10 +52,6 @@ export default function StartAttendanceModal({
     }));
   }, [lectures]);
 
-  if (!isOpen) {
-    return null;
-  }
-
   const selected = options.find((item) => item.key === lectureId)?.value;
   const selectedDateDay = getDayFromDate(date);
   const timetableDay = String(selected?.day || "").trim();
@@ -80,134 +79,115 @@ export default function StartAttendanceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="text-xl font-semibold text-gray-900">
-          Start Attendance Session
-        </h2>
-        <p className="mt-1 text-sm text-gray-600">
-          Select a timetable lecture and date to start live attendance.
-        </p>
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title="Start Attendance Session"
+      description="Select a timetable lecture and date to start live attendance."
+    >
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <Field label="Date">
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
+        </Field>
 
-        <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Date
-            </label>
+        <Field label="Lecture">
+          <Select
+            value={lectureId}
+            onChange={(e) => setLectureId(e.target.value)}
+            required
+          >
+            <option value="">Select lecture from timetable</option>
+            {options.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Field label="Attendance Time Slot">
+          <Select
+            value={attendanceWindowSeconds}
+            onChange={(e) =>
+              setAttendanceWindowSeconds(Number(e.target.value) || 60)
+            }
+          >
+            {durationOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <div className="rounded-card border border-line bg-canvas p-3">
+          <label className="flex cursor-pointer items-start gap-3">
             <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Lecture
-            </label>
-            <select
-              value={lectureId}
-              onChange={(e) => setLectureId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              required
-            >
-              <option value="">Select lecture from timetable</option>
-              {options.map((option) => (
-                <option key={option.key} value={option.key}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Attendance Time Slot
-            </label>
-            <select
-              value={attendanceWindowSeconds}
-              onChange={(e) =>
-                setAttendanceWindowSeconds(Number(e.target.value) || 60)
+              type="checkbox"
+              checked={enforceDistanceCheck}
+              onChange={(event) =>
+                setEnforceDistanceCheck(Boolean(event.target.checked))
               }
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
-            >
-              {durationOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                checked={enforceDistanceCheck}
-                onChange={(event) =>
-                  setEnforceDistanceCheck(Boolean(event.target.checked))
-                }
-                className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600"
-              />
-              <span>
-                <span className="block text-sm font-medium text-slate-700">
-                  Enforce student location radius
-                </span>
-                <span className="block text-xs text-slate-500">
-                  If enabled, students must be within classroom distance to mark
-                  attendance. If disabled, location is informational only.
-                </span>
+              className="mt-1 h-4 w-4 rounded border-line text-brand-600"
+            />
+            <span>
+              <span className="block text-sm font-medium text-ink">
+                Enforce student location radius
               </span>
-            </label>
-          </div>
+              <span className="block text-xs text-ink-soft">
+                If enabled, students must be within classroom distance to mark
+                attendance. If disabled, location is informational only.
+              </span>
+            </span>
+          </label>
+        </div>
 
-          {selected ? (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-              <p>
-                <span className="font-medium">Subject:</span>{" "}
-                {selected.subjectName || selected.subject || "-"}
+        {selected ? (
+          <div className="rounded-card border border-line bg-canvas p-3 text-sm text-ink-soft">
+            <p>
+              <span className="font-medium text-ink">Subject:</span>{" "}
+              {selected.subjectName || selected.subject || "-"}
+            </p>
+            <p>
+              <span className="font-medium text-ink">Class:</span>{" "}
+              {selected.branch || "-"} {selected.year || ""}
+              {selected.semester ? ` / Sem ${selected.semester}` : ""}
+            </p>
+            <p>
+              <span className="font-medium text-ink">Timetable Day:</span>{" "}
+              {timetableDay || "-"}
+            </p>
+            <p>
+              <span className="font-medium text-ink">Selected Date Day:</span>{" "}
+              {selectedDateDay || "-"}
+            </p>
+            {!isMatchingDay ? (
+              <p className="mt-1 text-xs text-danger">
+                Selected date does not match timetable day for this lecture.
               </p>
-              <p>
-                <span className="font-medium">Class:</span>{" "}
-                {selected.branch || "-"} {selected.year || ""}
-                {selected.semester ? ` / Sem ${selected.semester}` : ""}
-              </p>
-              <p>
-                <span className="font-medium">Timetable Day:</span>{" "}
-                {timetableDay || "-"}
-              </p>
-              <p>
-                <span className="font-medium">Selected Date Day:</span>{" "}
-                {selectedDateDay || "-"}
-              </p>
-              {!isMatchingDay ? (
-                <p className="mt-1 text-xs text-rose-600">
-                  Selected date does not match timetable day for this lecture.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting || !isMatchingDay}
-              className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white disabled:opacity-60"
-            >
-              {submitting ? "Starting..." : "Start Attendance Session"}
-            </button>
+            ) : null}
           </div>
-        </form>
-      </div>
-    </div>
+        ) : null}
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="success"
+            disabled={submitting || !isMatchingDay}
+            loading={submitting}
+          >
+            {submitting ? "Starting..." : "Start Attendance Session"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

@@ -271,15 +271,15 @@ function EventsCalendar() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pt-10 pb-10">
+    <div className="-mx-4 -my-6 min-h-full bg-gradient-to-br from-blue-50 to-indigo-50 px-4 pb-10 pt-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       <button
         onClick={() => router.push("/calendars")}
-        className="flex items-center mx-4 sm:mx-8 my-4 text-indigo-600 hover:text-indigo-800 transition-colors"
+        className="mb-4 flex items-center text-indigo-600 transition-colors hover:text-indigo-800"
       >
         <FiArrowLeft className="mr-2" />
         Back to Calendars
       </button>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Events Calendar</h1>

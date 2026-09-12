@@ -2,6 +2,9 @@
 
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
+import { ScanFace } from "lucide-react";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
 
 const FaceCameraCapture = dynamic(
   () => import("@/components/student/FaceCameraCapture"),
@@ -36,24 +39,35 @@ export default function FaceRecognitionAttendance({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <h3 className="text-sm font-semibold text-slate-700">Face Verification</h3>
-      <p className="mt-1 text-xs text-slate-500">
-        Look at the camera and blink once. Several frames are captured and
-        verified against your registered face on the server.
-      </p>
-      <FaceCameraCapture
-        disabled={disabled}
-        buttonLabel="Verify Face (Blink)"
-        mode="liveness"
-        onDescriptor={handleDescriptor}
+    <Card>
+      <CardHeader
+        title={
+          <span className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
+              <ScanFace className="h-3.5 w-3.5" />
+            </span>
+            Face Verification
+          </span>
+        }
+        description="Look at the camera and blink once. Several frames are captured and verified against your registered face on the server."
+        actions={ready ? <Badge tone="success">Verified</Badge> : null}
       />
-      {ready ? (
-        <p className="mt-2 text-xs text-emerald-700">
-          Face verification completed for this session.
-        </p>
-      ) : null}
-      {status ? <p className="mt-2 text-xs text-slate-600">{status}</p> : null}
-    </div>
+      <CardBody>
+        <FaceCameraCapture
+          disabled={disabled}
+          buttonLabel="Verify Face (Blink)"
+          mode="liveness"
+          onDescriptor={handleDescriptor}
+        />
+        {ready ? (
+          <p className="mt-3 text-xs text-emerald-700">
+            Face verification completed for this session.
+          </p>
+        ) : null}
+        {status ? (
+          <p className="mt-3 text-xs text-ink-soft">{status}</p>
+        ) : null}
+      </CardBody>
+    </Card>
   );
 }

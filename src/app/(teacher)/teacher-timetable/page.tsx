@@ -4,10 +4,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, firestore } from "@/lib/client/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { FiArrowLeft, FiPlus } from "react-icons/fi";
+import { Plus } from "lucide-react";
 import { toast } from "react-toastify";
 import TimetableGrid from "@/components/teacher/TimetableGrid";
 import AddLectureModal from "@/components/teacher/AddLectureModal";
+import PageHeader from "@/components/ui/PageHeader";
+import Button from "@/components/ui/Button";
+import { Card, CardBody } from "@/components/ui/Card";
+import { Field, Select } from "@/components/ui/Field";
+import { PageLoader } from "@/components/ui/States";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const TIME_SLOTS = [
@@ -271,97 +276,86 @@ export default function TeacherTimetablePage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Loading timetable...</div>
-      </div>
-    );
+    return <PageLoader label="Loading timetable..." />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-blue-100 px-4 py-6 sm:px-6">
-      <div className="mx-auto max-w-7xl">
-        <button
-          onClick={() => router.push("/teacher-dashboard")}
-          className="mb-4 inline-flex items-center gap-2 text-blue-700 hover:text-blue-900"
-        >
-          <FiArrowLeft /> Back to Dashboard
-        </button>
+    <div className="space-y-6">
+      <PageHeader
+        title="My Timetable"
+        description="Shared class timetable with overlap protection and attendance-ready lecture IDs."
+        actions={
+          <Button
+            onClick={() => setIsAddOpen(true)}
+            disabled={
+              !branch || !year || !semester || allowedSubjects.length === 0
+            }
+          >
+            <Plus className="h-4 w-4" /> Add lecture
+          </Button>
+        }
+      />
 
-        <div className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Timetable</h1>
-              <p className="text-sm text-gray-600">
-                Shared class timetable with overlap protection and
-                attendance-ready lecture IDs.
-              </p>
-            </div>
+      <Card>
+        <CardBody className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field label="Branch" htmlFor="tt-branch">
+              <Select
+                id="tt-branch"
+                value={branch}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setBranch(value);
+                  const firstYear =
+                    assignments.find((item) => item.branch === value)?.year ||
+                    "";
+                  setYear(firstYear);
+                }}
+              >
+                <option value="">Select Branch</option>
+                {branchOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-            <button
-              onClick={() => setIsAddOpen(true)}
-              disabled={
-                !branch || !year || !semester || allowedSubjects.length === 0
-              }
-              className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            >
-              <FiPlus /> Add Lecture Slot
-            </button>
+            <Field label="Year" htmlFor="tt-year">
+              <Select
+                id="tt-year"
+                value={year}
+                onChange={(event) => setYear(event.target.value)}
+              >
+                <option value="">Select Year</option>
+                {yearOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="Semester" htmlFor="tt-semester">
+              <Select
+                id="tt-semester"
+                value={semester}
+                onChange={(event) => setSemester(event.target.value)}
+              >
+                <option value="1">Semester 1</option>
+                <option value="2">Semester 2</option>
+              </Select>
+            </Field>
           </div>
 
-          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <select
-              value={branch}
-              onChange={(event) => {
-                const value = event.target.value;
-                setBranch(value);
-                const firstYear =
-                  assignments.find((item) => item.branch === value)?.year || "";
-                setYear(firstYear);
-              }}
-              className="rounded border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="">Select Branch</option>
-              {branchOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={year}
-              onChange={(event) => setYear(event.target.value)}
-              className="rounded border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="">Select Year</option>
-              {yearOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={semester}
-              onChange={(event) => setSemester(event.target.value)}
-              className="rounded border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="1">Semester 1</option>
-              <option value="2">Semester 2</option>
-            </select>
-          </div>
-
-          <div className="mt-6">
-            <TimetableGrid
-              lectures={lectures}
-              days={DAYS}
-              timeSlots={TIME_SLOTS}
-              currentTeacherId={teacher?.uid}
-            />
-          </div>
-        </div>
-      </div>
+          <TimetableGrid
+            lectures={lectures}
+            days={DAYS}
+            timeSlots={TIME_SLOTS}
+            currentTeacherId={teacher?.uid}
+          />
+        </CardBody>
+      </Card>
 
       <AddLectureModal
         open={isAddOpen}

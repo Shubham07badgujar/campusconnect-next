@@ -5,8 +5,12 @@ import React, { useState, useEffect } from "react";
 import { auth, firestore } from "@/lib/client/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { FiArrowLeft } from "react-icons/fi";
+import { BookOpen, GraduationCap, Layers, Lightbulb } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import StatCard from "@/components/ui/StatCard";
+import Badge from "@/components/ui/Badge";
+import { EmptyState, ErrorState } from "@/components/ui/States";
 
 export default function TeacherCourses() {
   const [dept, setDept] = useState("");
@@ -71,112 +75,117 @@ export default function TeacherCourses() {
     fetchTeacherData();
   }, [router]);
 
-  const getYearColor = (year) => {
-    const colors = {
-      "1st": "from-blue-500 to-blue-400",
-      "2nd": "from-purple-500 to-purple-400",
-      "3rd": "from-green-500 to-green-400",
-      "4th": "from-yellow-500 to-yellow-400",
-    };
-    return colors[year] || "from-gray-500 to-gray-400";
-  };
+  const totalSubjects = assignments.reduce(
+    (total, assignment) => total + assignment.subjects.length,
+    0,
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-blue-50 to-white px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <button
-        onClick={() => router.push("/teacher-dashboard")}
-        className="flex items-center my-4 text-red-600 hover:text-green-800 transition-colors"
-      >
-        <FiArrowLeft className="mr-2" />
-        Go Back
-      </button>
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg p-5 sm:p-8 mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-center text-blue-800 mb-2">
-            Your Teaching Dashboard
-          </h1>
-          <p className="text-center text-gray-600 mb-6">
-            Department: {dept || "Not assigned"}
-          </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Your Courses"
+        description={`Department: ${dept || "Not assigned"}`}
+      />
 
-          {error && (
-            <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
-              {error}
-            </div>
-          )}
-
-          {assignments.length === 0 ? (
-            <div className="text-center p-10 bg-gray-50 rounded-lg">
-              <p className="text-xl text-gray-500">No assignments found yet.</p>
-            </div>
-          ) : (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">
-                Your Assigned Teaching Loads
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {assignments.map((assignment, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`rounded-lg shadow-md overflow-hidden bg-gradient-to-r ${getYearColor(
-                      assignment.year,
-                    )}`}
-                  >
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold text-white mb-3">
-                        {assignment.branch || "Branch"} - {assignment.year} Year
-                      </h3>
-                      <div className="bg-white bg-opacity-90 rounded-lg p-4">
-                        <h4 className="font-medium text-gray-800 mb-2">
-                          Subjects:
-                        </h4>
-                        <ul className="space-y-1">
-                          {assignment.subjects.map((subject, subIndex) => (
-                            <li
-                              key={subIndex}
-                              className="flex items-center text-gray-700"
-                            >
-                              <span className="h-2 w-2 rounded-full bg-blue-500 mr-2"></span>
-                              {subject}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Teaching Tips Section */}
-        <div className="bg-blue-50 rounded-xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-blue-800 mb-3">
-            Teaching Resources
-          </h3>
-          <p className="text-gray-700 mb-4">
-            You have{" "}
-            {assignments.reduce(
-              (total, assignment) => total + assignment.subjects.length,
-              0,
-            )}{" "}
-            subject assignment(s) across {assignments.length} branch-year
-            block(s).
-          </p>
-          <div className="bg-white rounded-lg p-4">
-            <ul className="space-y-2 text-gray-700">
-              <li>• Access learning materials in the Resources section</li>
-              <li>• Schedule office hours using the Calendar</li>
-              <li>• Communicate with students through the Chat feature</li>
-              <li>• Post announcements to keep your students updated</li>
-            </ul>
+      {error ? (
+        <ErrorState title="Unable to load courses" description={error} />
+      ) : (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <StatCard
+              label="Branch-year blocks"
+              value={assignments.length}
+              icon={Layers}
+              tone="brand"
+            />
+            <StatCard
+              label="Subject assignments"
+              value={totalSubjects}
+              icon={BookOpen}
+              tone="info"
+            />
+            <StatCard
+              label="Department"
+              value={dept || "—"}
+              icon={GraduationCap}
+              tone="success"
+            />
           </div>
-        </div>
-      </div>
+
+          <Card>
+            <CardHeader
+              title="Assigned teaching loads"
+              description="Branch, year and subjects you are responsible for."
+            />
+            <CardBody>
+              {assignments.length === 0 ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title="No assignments yet"
+                  description="You have no teaching loads assigned to your profile."
+                />
+              ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {assignments.map((assignment, index) => (
+                    <div
+                      key={index}
+                      className="animate-fade-up rounded-card border border-line bg-white p-5 shadow-card"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-semibold text-ink">
+                          {assignment.branch || "Branch"}
+                        </h3>
+                        <Badge tone="brand">{assignment.year} Year</Badge>
+                      </div>
+                      <h4 className="mt-4 text-xs font-semibold uppercase tracking-wide text-ink-faint">
+                        Subjects
+                      </h4>
+                      <ul className="mt-2 space-y-1.5">
+                        {assignment.subjects.map((subject, subIndex) => (
+                          <li
+                            key={subIndex}
+                            className="flex items-center gap-2 text-sm text-ink-soft"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
+                            {subject}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Teaching resources"
+              description={`${totalSubjects} subject assignment(s) across ${assignments.length} branch-year block(s).`}
+            />
+            <CardBody>
+              <ul className="space-y-2 text-sm text-ink-soft">
+                <li className="flex items-start gap-2">
+                  <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                  Access learning materials in the Resources section
+                </li>
+                <li className="flex items-start gap-2">
+                  <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                  Schedule office hours using the Calendar
+                </li>
+                <li className="flex items-start gap-2">
+                  <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                  Communicate with students through the Chat feature
+                </li>
+                <li className="flex items-start gap-2">
+                  <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                  Post announcements to keep your students updated
+                </li>
+              </ul>
+            </CardBody>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

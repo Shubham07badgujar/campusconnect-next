@@ -2,6 +2,21 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import {
+  UserCheck,
+  UsersRound,
+  Clock3,
+  BookOpen,
+  Timer,
+  QrCode,
+  RefreshCw,
+  FileDown,
+  Square,
+} from "lucide-react";
+import { Card, CardHeader } from "@/components/ui/Card";
+import StatCard from "@/components/ui/StatCard";
+import Button from "@/components/ui/Button";
+import { Table, THead, TH, TBody, TR, TD } from "@/components/ui/Table";
 
 const QRScanner = dynamic(() => import("@/components/teacher/QRScanner"), {
   ssr: false,
@@ -125,62 +140,52 @@ export default function AttendanceSessionDashboard({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <p className="text-xs uppercase text-emerald-700">Present</p>
-          <p className="text-3xl font-bold text-emerald-700">{present}</p>
-        </div>
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-          <p className="text-xs uppercase text-blue-700">Joined</p>
-          <p className="text-3xl font-bold text-blue-700">{joined}</p>
-        </div>
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-xs uppercase text-amber-700">Pending</p>
-          <p className="text-3xl font-bold text-amber-700">{pending}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-3">
-          <p className="text-xs uppercase text-slate-600">Subject</p>
-          <p className="text-lg font-semibold text-slate-800">
-            {session.subjectName}
-          </p>
-        </div>
-        <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 md:col-span-3">
-          <p className="text-xs uppercase text-sky-700">Time Remaining</p>
-          <p className="text-2xl font-bold text-sky-700">{timerText}</p>
-        </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Present" value={present} icon={UserCheck} tone="success" />
+        <StatCard label="Joined" value={joined} icon={UsersRound} tone="info" />
+        <StatCard label="Pending" value={pending} icon={Clock3} tone="warning" />
+        <StatCard
+          label="Subject"
+          value={session.subjectName}
+          icon={BookOpen}
+          tone="brand"
+        />
+        <StatCard
+          label="Time Remaining"
+          value={timerText}
+          icon={Timer}
+          tone="info"
+        />
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => setShowScanner((prev) => !prev)}
-          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white"
-        >
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" onClick={() => setShowScanner((prev) => !prev)}>
+          <QrCode className="h-4 w-4" />
           {showScanner ? "Hide QR Scanner" : "Scan Student QR"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
           onClick={onRefresh}
+          loading={refreshing}
           disabled={refreshing}
-          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 disabled:opacity-60"
         >
+          {!refreshing ? <RefreshCw className="h-4 w-4" /> : null}
           {refreshing ? "Refreshing..." : "Refresh Session Data"}
-        </button>
-        <button
+        </Button>
+        <Button type="button" onClick={exportCsv}>
+          <FileDown className="h-4 w-4" /> Export CSV (Google Sheets)
+        </Button>
+        <Button
           type="button"
-          onClick={exportCsv}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white"
-        >
-          Export CSV (Google Sheets)
-        </button>
-        <button
-          type="button"
+          variant="danger"
           disabled={ending}
+          loading={ending}
           onClick={onEndSession}
-          className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
+          {!ending ? <Square className="h-4 w-4" /> : null}
           {ending ? "Ending..." : "End Session"}
-        </button>
+        </Button>
       </div>
 
       {showScanner ? <QRScanner onDetected={onScanStudent} /> : null}
@@ -192,110 +197,111 @@ export default function AttendanceSessionDashboard({
         refreshing={refreshing}
       />
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2">
-          <span className="text-sm font-semibold text-slate-700">
-            Students Joined Session
-          </span>
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={refreshing}
-            className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 disabled:opacity-60"
-          >
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
-        <div className="max-h-64 overflow-y-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="sticky top-0 bg-white text-slate-500">
+      <Card className="overflow-hidden">
+        <CardHeader
+          title="Students Joined Session"
+          actions={
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={onRefresh}
+              loading={refreshing}
+              disabled={refreshing}
+            >
+              {!refreshing ? <RefreshCw className="h-3.5 w-3.5" /> : null}
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </Button>
+          }
+        />
+        <div className="cc-scroll max-h-64 overflow-y-auto">
+          <Table>
+            <THead>
               <tr>
-                <th className="px-4 py-2">Student</th>
-                <th className="px-4 py-2">Roll Number / ID</th>
-                <th className="px-4 py-2">Joined At</th>
+                <TH>Student</TH>
+                <TH>Roll Number / ID</TH>
+                <TH>Joined At</TH>
               </tr>
-            </thead>
-            <tbody>
+            </THead>
+            <TBody>
               {safeJoinedStudents.map((student) => (
-                <tr
+                <TR
                   key={`${student.studentId || student.prn || "student"}_joined`}
-                  className="border-t border-slate-100"
                 >
-                  <td className="px-4 py-2">
+                  <TD className="font-medium">
                     {student.studentName || "Student"}
-                  </td>
-                  <td className="px-4 py-2">
-                    {student.prn || student.studentId || "-"}
-                  </td>
-                  <td className="px-4 py-2">
-                    {formatTime(student.joinTimestamp)}
-                  </td>
-                </tr>
+                  </TD>
+                  <TD>{student.prn || student.studentId || "-"}</TD>
+                  <TD>{formatTime(student.joinTimestamp)}</TD>
+                </TR>
               ))}
               {safeJoinedStudents.length === 0 ? (
                 <tr>
                   <td
                     colSpan={3}
-                    className="px-4 py-8 text-center text-slate-500"
+                    className="px-4 py-8 text-center text-sm text-ink-soft"
                   >
                     No students have joined the session yet.
                   </td>
                 </tr>
               ) : null}
-            </tbody>
-          </table>
+            </TBody>
+          </Table>
         </div>
-      </div>
+      </Card>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2">
-          <span className="text-sm font-semibold text-slate-700">
-            Live Attendance List
-          </span>
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={refreshing}
-            className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 disabled:opacity-60"
-          >
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
-        <div className="max-h-80 overflow-y-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="sticky top-0 bg-white text-slate-500">
+      <Card className="overflow-hidden">
+        <CardHeader
+          title="Live Attendance List"
+          actions={
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={onRefresh}
+              loading={refreshing}
+              disabled={refreshing}
+            >
+              {!refreshing ? <RefreshCw className="h-3.5 w-3.5" /> : null}
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </Button>
+          }
+        />
+        <div className="cc-scroll max-h-80 overflow-y-auto">
+          <Table>
+            <THead>
               <tr>
-                <th className="px-4 py-2">PRN</th>
-                <th className="px-4 py-2">Student</th>
-                <th className="px-4 py-2">Method</th>
-                <th className="px-4 py-2">Time</th>
+                <TH>PRN</TH>
+                <TH>Student</TH>
+                <TH>Method</TH>
+                <TH>Time</TH>
               </tr>
-            </thead>
-            <tbody>
+            </THead>
+            <TBody>
               {sortedRecords.map((record) => (
-                <tr key={record.recordId} className="border-t border-slate-100">
-                  <td className="px-4 py-2">{record.prn || "-"}</td>
-                  <td className="px-4 py-2">
+                <TR key={record.recordId}>
+                  <TD>{record.prn || "-"}</TD>
+                  <TD className="font-medium">
                     {record.studentName || record.studentId}
-                  </td>
-                  <td className="px-4 py-2">{formatMethod(record.method)}</td>
-                  <td className="px-4 py-2">{formatTime(record.timestamp)}</td>
-                </tr>
+                  </TD>
+                  <TD>{formatMethod(record.method)}</TD>
+                  <TD>{formatTime(record.timestamp)}</TD>
+                </TR>
               ))}
               {sortedRecords.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}
-                    className="px-4 py-8 text-center text-slate-500"
+                    className="px-4 py-8 text-center text-sm text-ink-soft"
                   >
                     No attendance records yet.
                   </td>
                 </tr>
               ) : null}
-            </tbody>
-          </table>
+            </TBody>
+          </Table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

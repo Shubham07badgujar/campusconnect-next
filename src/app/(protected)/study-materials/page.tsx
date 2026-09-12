@@ -15,8 +15,14 @@ import { firestore as db, auth } from "@/lib/client/firebase"; // Remove storage
 import { useAuthState } from "react-firebase-hooks/auth";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
-import { FiArrowLeft, FiFilter } from "react-icons/fi";
+import { FiFilter, FiDownload } from "react-icons/fi";
 import axios from "axios";
+import PageHeader from "@/components/ui/PageHeader";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import { Field, Input, Select } from "@/components/ui/Field";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { SkeletonCards, EmptyState } from "@/components/ui/States";
 
 const API_URL = "";
 
@@ -366,188 +372,172 @@ const StudyMaterials = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
-      <button
-        onClick={() =>
-          router.push(isTeacher ? "/teacher-dashboard" : "/student-dashboard")
-        }
-        className="flex items-center my-4 text-red-600 hover:text-green-800 transition-colors"
-      >
-        <FiArrowLeft className="mr-2" />
-        Go Back
-      </button>
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6">Study Materials</h1>
+    <div className="space-y-6">
+      <PageHeader
+        title="Study Resources"
+        description="Browse and download notes and materials for your subjects."
+      />
 
       {/* Filter section */}
-      <div className="bg-gray-50 p-4 rounded-lg mb-6">
-        <h2 className="text-lg font-semibold mb-3 flex items-center">
-          <FiFilter className="mr-2" />
-          Filter Materials
-        </h2>
+      <Card>
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              <FiFilter className="text-brand-600" /> Filter materials
+            </span>
+          }
+        />
+        <CardBody>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <Field label="Course" htmlFor="sm-course">
+              <Select
+                id="sm-course"
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
+              >
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-gray-700 mb-2">Course:</label>
-            <select
-              className="w-full border rounded py-2 px-3 text-gray-700"
-              value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
-            >
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <Field label="Department / Branch" htmlFor="sm-branch">
+              <Select
+                id="sm-branch"
+                value={selectedBranch}
+                onChange={(e) => {
+                  setSelectedBranch(e.target.value);
+                  setSelectedSubject("");
+                }}
+              >
+                <option value="">All Departments</option>
+                {branches.map((branch, index) => (
+                  <option key={index} value={branch}>
+                    {branch}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-          <div>
-            <label className="block text-gray-700 mb-2">
-              Department/Branch:
-            </label>
-            <select
-              className="w-full border rounded py-2 px-3 text-gray-700"
-              value={selectedBranch}
-              onChange={(e) => {
-                setSelectedBranch(e.target.value);
-                setSelectedSubject("");
-              }}
-            >
-              <option value="">All Departments</option>
-              {branches.map((branch, index) => (
-                <option key={index} value={branch}>
-                  {branch}
-                </option>
-              ))}
-            </select>
-          </div>
+            <Field label="Subject" htmlFor="sm-subject">
+              <Select
+                id="sm-subject"
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                disabled={!selectedBranch}
+              >
+                <option value="">All Subjects</option>
+                {subjects.map((subject, index) => (
+                  <option key={index} value={subject}>
+                    {subject}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-          <div>
-            <label className="block text-gray-700 mb-2">Subject:</label>
-            <select
-              className="w-full border rounded py-2 px-3 text-gray-700"
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              disabled={!selectedBranch}
-            >
-              <option value="">All Subjects</option>
-              {subjects.map((subject, index) => (
-                <option key={index} value={subject}>
-                  {subject}
-                </option>
-              ))}
-            </select>
+            <Field label="Search" htmlFor="sm-search">
+              <Input
+                id="sm-search"
+                type="text"
+                placeholder="Search materials..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </Field>
           </div>
-
-          <div>
-            <label className="block text-gray-700 mb-2">Search:</label>
-            <input
-              type="text"
-              className="w-full border rounded py-2 px-3 text-gray-700"
-              placeholder="Search materials..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-      </div>
+        </CardBody>
+      </Card>
 
       {isTeacher && (
-        <div className="bg-blue-50 p-4 rounded-lg mb-6">
-          <p className="text-blue-800">
-            To upload new materials for your department, please use the
-            dedicated
-            <a
-              href="/teacher-studymaterial"
-              className="font-bold underline ml-1 hover:text-blue-600"
-            >
-              Teacher Study Materials
-            </a>{" "}
-            page.
-          </p>
+        <div className="rounded-card border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm text-brand-800">
+          To upload new materials for your department, use the dedicated{" "}
+          <a
+            href="/teacher-studymaterial"
+            className="font-semibold underline hover:text-brand-600"
+          >
+            Teacher Study Materials
+          </a>{" "}
+          page.
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
-          <p className="text-lg">Loading materials...</p>
-        </div>
+        <SkeletonCards count={6} />
       ) : filteredMaterials.length === 0 ? (
-        <div className="text-center bg-white p-8 rounded-lg shadow">
-          <p className="text-lg">
-            {searchQuery
-              ? "No materials found matching your search."
+        <EmptyState
+          title="No materials found"
+          description={
+            searchQuery
+              ? "No materials match your search."
               : selectedSubject
-                ? `No materials available for ${selectedSubject} in ${
-                    selectedBranch || "any department"
-                  }.`
+                ? `No materials available for ${selectedSubject} in ${selectedBranch || "any department"}.`
                 : selectedBranch
                   ? `No materials available for ${selectedBranch}.`
-                  : "No materials available for this course yet."}
-          </p>
-        </div>
+                  : "No materials available for this course yet."
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredMaterials.map((material) => (
-            <div
+            <Card
               key={material.id}
-              className="w-full bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+              className="flex flex-col p-5 transition hover:-translate-y-0.5 hover:shadow-pop"
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="mb-3 flex items-center justify-between">
                 <span className="text-2xl">
                   {getCategoryIcon(material.category)}
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="text-xs text-ink-faint">
                   {new Date(material.createdAt).toLocaleDateString()}
                 </span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">{material.title}</h3>
+              <h3 className="text-base font-semibold text-ink">
+                {material.title}
+              </h3>
 
-              {material.department && (
-                <div className="flex items-center gap-1 mb-1">
-                  <span className="text-sm bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                    {material.department}
-                  </span>
-                </div>
-              )}
-
-              {material.subject && (
-                <div className="flex items-center gap-1 mb-2">
-                  <span className="text-sm bg-green-100 text-green-800 px-2 py-0.5 rounded">
-                    {material.subject}
-                  </span>
-                </div>
-              )}
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {material.department && (
+                  <Badge tone="info">{material.department}</Badge>
+                )}
+                {material.subject && (
+                  <Badge tone="success">{material.subject}</Badge>
+                )}
+              </div>
 
               {material.description && (
-                <p className="text-gray-600 mb-4">{material.description}</p>
+                <p className="mt-3 text-sm text-ink-soft">
+                  {material.description}
+                </p>
               )}
 
-              <div className="flex justify-between items-center">
-                <button
+              <div className="mt-4 flex items-center justify-between gap-2 border-t border-line pt-3">
+                <Button
+                  size="sm"
+                  variant="success"
                   onClick={() =>
                     handleDownload(material.fileURL, material.title)
                   }
-                  className="bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded text-sm flex items-center"
                 >
-                  📥 Download
-                </button>
+                  <FiDownload className="h-3.5 w-3.5" /> Download
+                </Button>
                 {isTeacher && material.uploadedBy === user?.uid && (
-                  <button
+                  <Button
+                    size="sm"
+                    variant="danger"
                     onClick={() =>
                       handleDelete(material.id, material.cloudinaryPublicId)
                     }
-                    className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm"
                   >
                     Delete
-                  </button>
+                  </Button>
                 )}
               </div>
-              <div className="mt-3 text-xs text-gray-500">
-                Uploaded by: {material.uploadedByName}
-              </div>
-            </div>
+              <p className="mt-2 text-xs text-ink-faint">
+                Uploaded by {material.uploadedByName}
+              </p>
+            </Card>
           ))}
         </div>
       )}

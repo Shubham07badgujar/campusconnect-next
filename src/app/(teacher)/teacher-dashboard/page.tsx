@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { auth, firestore } from "@/lib/client/firebase";
 import {
   collection,
@@ -22,7 +21,6 @@ import {
   FiBook,
   FiCalendar,
   FiCheck,
-  FiChevronDown,
   FiChevronRight,
   FiClock,
   FiDownload,
@@ -32,7 +30,40 @@ import {
   FiMessageCircle,
   FiUsers,
 } from "react-icons/fi";
+import {
+  CalendarDays,
+  CalendarRange,
+  Bell,
+  BookOpen,
+  ClipboardCheck,
+  MessageCircle,
+  FileText,
+  Clock,
+  CalendarClock,
+} from "lucide-react";
 import FixItBoard from "@/components/common/FixItBoard";
+import PageHeader from "@/components/ui/PageHeader";
+import StatCard from "@/components/ui/StatCard";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import Tabs from "@/components/ui/Tabs";
+import { Input } from "@/components/ui/Field";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
+import {
+  Skeleton,
+  SkeletonCards,
+  SkeletonRows,
+  EmptyState,
+} from "@/components/ui/States";
 
 const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
@@ -200,7 +231,6 @@ function TeacherDashboard() {
   const [academicCalendar, setAcademicCalendar] = useState([]);
 
   const [activeTab, setActiveTab] = useState("overview");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedAssignmentIndex, setSelectedAssignmentIndex] = useState(0);
   const [studentSearch, setStudentSearch] = useState("");
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
@@ -720,72 +750,63 @@ function TeacherDashboard() {
       return item.day === day && start <= timeSlot && end > timeSlot;
     });
 
+  const quickActions = [
+    {
+      label: "Attendance",
+      description: "Track and manage sessions",
+      route: "/teacher-attendance",
+      icon: ClipboardCheck,
+    },
+    {
+      label: "Student Chats",
+      description: "Real-time conversations",
+      route: "/chat",
+      icon: MessageCircle,
+    },
+    {
+      label: "Study Materials",
+      description: "Upload and manage",
+      route: "/teacher-studymaterial",
+      icon: BookOpen,
+    },
+    {
+      label: "My Timetable",
+      description: "Weekly schedule editor",
+      route: "/teacher-timetable",
+      icon: Clock,
+    },
+    {
+      label: "Exam Schedule",
+      description: "Official exam timetable",
+      route: "/exam-timetable",
+      icon: FileText,
+    },
+    {
+      label: "Calendars",
+      description: "Events & academic hub",
+      route: "/calendars",
+      icon: CalendarClock,
+    },
+  ];
+
   const renderOverview = () => (
-    <>
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <div className="rounded-3xl bg-white p-5 text-black xl:col-span-8">
-          <p className="text-xs uppercase tracking-[0.2em] text-black">
-            Teacher Workspace
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">
-            {teacherName}
-          </h1>
-          <p className="mt-2 text-sm text-gray-800">
-            {department || "Department"} • {todayName}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 xl:col-span-4">
-          <div className="rounded-2xl bg-[#f4f8ff] p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-700">
-              Today Classes
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-700">
-              {todaysClasses.length}
-            </p>
-          </div>
-          <div className="rounded-2xl bg-[#f7fbf1] p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Weekly Classes
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-800">
-              {upcomingClasses}
-            </p>
-          </div>
-          <div className="rounded-2xl bg-[#fff8ef] p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Announcements
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-800">
-              {unreadAnnouncements}
-            </p>
-          </div>
-          <div className="rounded-2xl bg-[#f4f5ff] p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Chats
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-800">Live</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-5 overflow-hidden rounded-3xl border border-slate-200/80 bg-white">
-        <div className="border-b border-slate-200 bg-[#f8fafc] px-5 py-4 sm:px-6">
-          <h2 className="text-xl font-semibold text-slate-800">
-            Today's Classes
-          </h2>
-        </div>
-        <div className="space-y-3 p-4 sm:p-6">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader
+          title="Today's Classes"
+          description={`Your schedule for ${todayName}`}
+        />
+        <CardBody className="space-y-3">
           {todaysClasses.length > 0 ? (
             todaysClasses.map((item) => (
               <div
                 key={`${item.source}_${item.id}`}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                className="rounded-card border border-line bg-slate-50/60 p-4"
               >
-                <p className="text-base font-semibold text-slate-800">
+                <p className="text-base font-semibold text-ink">
                   {item.subject}
                 </p>
-                <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-600 sm:text-sm">
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-soft sm:text-sm">
                   <span className="inline-flex items-center gap-1">
                     <FiClock className="h-4 w-4" /> {item.startTime || "--:--"}{" "}
                     - {item.endTime || "--:--"}
@@ -795,425 +816,456 @@ function TeacherDashboard() {
                       <FiMapPin className="h-4 w-4" /> {item.room}
                     </span>
                   ) : null}
-                  {item.year ? <span>{item.year}</span> : null}
-                  {item.semester ? <span>Sem {item.semester}</span> : null}
+                  {item.year ? <Badge tone="neutral">{item.year}</Badge> : null}
+                  {item.semester ? (
+                    <Badge tone="info">Sem {item.semester}</Badge>
+                  ) : null}
                 </div>
               </div>
             ))
           ) : (
-            <p className="py-8 text-center text-slate-500">
-              No classes scheduled for today.
-            </p>
+            <EmptyState
+              icon={CalendarDays}
+              title="No classes today"
+              description="You have no classes scheduled for today."
+            />
           )}
-        </div>
-      </div>
-    </>
-  );
+        </CardBody>
+      </Card>
 
-  const renderAnnouncements = () => (
-    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-800">
-            Announcements
-          </h2>
-          <p className="text-sm text-slate-500">
-            Updates relevant for faculty and students.
-          </p>
-        </div>
-      </div>
-
-      {announcements.length > 0 ? (
-        <div className="space-y-3">
-          {announcements.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-            >
-              <p className="text-base font-semibold text-slate-800">
-                {item.title || "Announcement"}
-              </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">
-                {item.message || "No details available."}
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-slate-500">No announcements available.</p>
-      )}
+      <Card>
+        <CardHeader
+          title="Quick Actions"
+          description="Jump to the tools you use most"
+        />
+        <CardBody>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.route}
+                  type="button"
+                  onClick={() => router.push(action.route)}
+                  className="flex items-center gap-3 rounded-card border border-line bg-surface p-4 text-left shadow-card transition hover:border-brand-300 hover:bg-brand-50/40"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-ink">
+                      {action.label}
+                    </span>
+                    <span className="block truncate text-xs text-ink-soft">
+                      {action.description}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </CardBody>
+      </Card>
     </div>
   );
 
-  const renderCalendars = () => (
-    <div className="space-y-5">
-      <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-slate-800">
-              Calendar Hub
-            </h2>
-            <p className="text-sm text-slate-500">
-              View full events and academic calendars in dedicated page.
-            </p>
+  const renderAnnouncements = () => (
+    <Card>
+      <CardHeader
+        title="Announcements"
+        description="Updates relevant for faculty and students."
+      />
+      <CardBody>
+        {announcements.length > 0 ? (
+          <div className="space-y-3">
+            {announcements.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-card border border-line bg-slate-50/60 p-4"
+              >
+                <p className="text-base font-semibold text-ink">
+                  {item.title || "Announcement"}
+                </p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">
+                  {item.message || "No details available."}
+                </p>
+              </div>
+            ))}
           </div>
-          <button
-            type="button"
-            onClick={() =>
-              router.push("/calendars")
-            }
-            className="inline-flex items-center gap-1 rounded-xl bg-[#2f87d9] px-4 py-2 text-sm font-medium text-white"
-          >
-            Open Main Calendars <FiChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+        ) : (
+          <EmptyState
+            icon={Bell}
+            title="No announcements"
+            description="There are no active announcements right now."
+          />
+        )}
+      </CardBody>
+    </Card>
+  );
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-          <h3 className="mb-3 text-lg font-semibold text-slate-800">Events</h3>
-          {eventsCalendar.length > 0 ? (
-            <div className="space-y-3">
-              {eventsCalendar.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
-                >
-                  <p className="font-medium text-slate-800">
-                    {item.title || "Event"}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {item.startDate || "Date TBA"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-slate-500">No events available.</p>
-          )}
-        </div>
+  const renderCalendars = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader
+          title="Calendar Hub"
+          description="View full events and academic calendars in a dedicated page."
+          actions={
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => router.push("/calendars")}
+            >
+              Open Main Calendars <FiChevronRight className="h-4 w-4" />
+            </Button>
+          }
+        />
+      </Card>
 
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-          <h3 className="mb-3 text-lg font-semibold text-slate-800">
-            Academic Calendar
-          </h3>
-          {academicCalendar.length > 0 ? (
-            <div className="space-y-3">
-              {academicCalendar.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
-                >
-                  <p className="font-medium text-slate-800">
-                    {item.activity || item.title || "Academic Event"}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {item.startDate || item.dateSlots || "Date not available"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-slate-500">
-              No academic calendar items available.
-            </p>
-          )}
-        </div>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader title="Events" />
+          <CardBody>
+            {eventsCalendar.length > 0 ? (
+              <div className="space-y-3">
+                {eventsCalendar.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-card border border-line bg-slate-50/60 p-3"
+                  >
+                    <p className="font-medium text-ink">
+                      {item.title || "Event"}
+                    </p>
+                    <p className="text-xs text-ink-soft">
+                      {item.startDate || "Date TBA"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={FiCalendar}
+                title="No events"
+                description="No events available."
+              />
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader title="Academic Calendar" />
+          <CardBody>
+            {academicCalendar.length > 0 ? (
+              <div className="space-y-3">
+                {academicCalendar.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-card border border-line bg-slate-50/60 p-3"
+                  >
+                    <p className="font-medium text-ink">
+                      {item.activity || item.title || "Academic Event"}
+                    </p>
+                    <p className="text-xs text-ink-soft">
+                      {item.startDate || item.dateSlots || "Date not available"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={FiCalendar}
+                title="No academic items"
+                description="No academic calendar items available."
+              />
+            )}
+          </CardBody>
+        </Card>
       </div>
     </div>
   );
 
   const renderCourses = () => (
-    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-      <div className="mb-4 flex items-center gap-2">
-        <FiBook className="h-5 w-5 text-[#2f87d9]" />
-        <h2 className="text-xl font-semibold text-slate-800">
-          Assigned Courses
-        </h2>
-      </div>
-
-      {teacherAssignments.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {teacherAssignments.map((assignment, index) => (
-            <div
-              key={`${assignment.branch}_${assignment.year}_${index}`}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-            >
-              <p className="text-base font-semibold text-slate-800">
-                {assignment.branch || "Branch"} • {assignment.year || "Year"}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(assignment.subjects || []).map((subject) => (
-                  <span
-                    key={`${assignment.year}_${subject}`}
-                    className="rounded-full bg-[#e9f2ff] px-2.5 py-1 text-xs font-medium text-[#1f6fb7]"
-                  >
-                    {subject}
-                  </span>
-                ))}
+    <Card>
+      <CardHeader title="Assigned Courses" />
+      <CardBody>
+        {teacherAssignments.length > 0 ? (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {teacherAssignments.map((assignment, index) => (
+              <div
+                key={`${assignment.branch}_${assignment.year}_${index}`}
+                className="rounded-card border border-line bg-slate-50/60 p-4"
+              >
+                <p className="text-base font-semibold text-ink">
+                  {assignment.branch || "Branch"} • {assignment.year || "Year"}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(assignment.subjects || []).map((subject) => (
+                    <Badge key={`${assignment.year}_${subject}`} tone="brand">
+                      {subject}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-slate-500">No teaching assignments found yet.</p>
-      )}
-    </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={FiBook}
+            title="No courses assigned"
+            description="No teaching assignments found yet."
+          />
+        )}
+      </CardBody>
+    </Card>
   );
 
   const renderStudents = () => (
-    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <FiUsers className="h-5 w-5 text-[#2f87d9]" />
-          <h2 className="text-xl font-semibold text-slate-800">Students</h2>
-        </div>
-        <span className="rounded-full bg-[#f4f8ff] px-3 py-1 text-xs font-semibold text-[#1f6fb7]">
-          {assignmentStudentGroups.reduce(
-            (acc, group) => acc + group.students.length,
-            0,
-          )}{" "}
-          total
-        </span>
-      </div>
-
-      {assignmentStudentGroups.length > 0 ? (
-        <>
-          <div className="mb-4 flex flex-wrap gap-2">
-            {assignmentStudentGroups.map((group, index) => {
-              const isActive = selectedAssignmentIndex === index;
-              const assignmentLabel = `${group.assignment.branch || "Branch"} • ${group.assignment.year || "Year"}`;
-              return (
-                <button
-                  key={group.key}
-                  type="button"
-                  onClick={() => setSelectedAssignmentIndex(index)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                    isActive
-                      ? "bg-[#2f87d9] text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  {assignmentLabel} ({group.students.length})
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <input
-              type="text"
-              value={studentSearch}
-              onChange={(event) => setStudentSearch(event.target.value)}
-              placeholder="Search by student name or PRN"
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 sm:max-w-xs"
-            />
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const rows = filteredSelectedStudents.filter((student) =>
-                    selectedStudentIds.includes(student.uid),
-                  );
-                  if (!rows.length) return;
-                  const fileName = `${String(
-                    selectedGroup?.assignment?.branch || "branch",
-                  )
-                    .toLowerCase()
-                    .replace(
-                      /[^a-z0-9]+/g,
-                      "_",
-                    )}_${String(selectedGroup?.assignment?.year || "year").toLowerCase()}_selected_students.csv`;
-                  downloadCsvFile(fileName, getStudentCsvContent(rows));
-                }}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700"
-              >
-                Export Selected CSV
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const rows = filteredSelectedStudents.filter((student) =>
-                    selectedStudentIds.includes(student.uid),
-                  );
-                  if (!rows.length) return;
-                  exportStudentsPdf("Selected Students Report", rows);
-                }}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700"
-              >
-                Export Selected PDF
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!filteredSelectedStudents.length) return;
-                  const fileName = `${String(
-                    selectedGroup?.assignment?.branch || "branch",
-                  )
-                    .toLowerCase()
-                    .replace(
-                      /[^a-z0-9]+/g,
-                      "_",
-                    )}_${String(selectedGroup?.assignment?.year || "year").toLowerCase()}_all_students.csv`;
-                  downloadCsvFile(
-                    fileName,
-                    getStudentCsvContent(filteredSelectedStudents),
-                  );
-                }}
-                className="rounded-lg bg-[#2f87d9] px-3 py-1.5 text-xs font-medium text-white"
-              >
-                Export All CSV
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!filteredSelectedStudents.length) return;
-                  exportStudentsPdf(
-                    "All Students Report",
-                    filteredSelectedStudents,
-                  );
-                }}
-                className="rounded-lg bg-[#2f87d9] px-3 py-1.5 text-xs font-medium text-white"
-              >
-                Export All PDF
-              </button>
+    <Card>
+      <CardHeader
+        title="Students"
+        actions={
+          <Badge tone="brand">
+            {assignmentStudentGroups.reduce(
+              (acc, group) => acc + group.students.length,
+              0,
+            )}{" "}
+            total
+          </Badge>
+        }
+      />
+      <CardBody>
+        {assignmentStudentGroups.length > 0 ? (
+          <>
+            <div className="mb-4 flex flex-wrap gap-2">
+              {assignmentStudentGroups.map((group, index) => {
+                const isActive = selectedAssignmentIndex === index;
+                const assignmentLabel = `${group.assignment.branch || "Branch"} • ${group.assignment.year || "Year"}`;
+                return (
+                  <Button
+                    key={group.key}
+                    variant={isActive ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => setSelectedAssignmentIndex(index)}
+                  >
+                    {assignmentLabel} ({group.students.length})
+                  </Button>
+                );
+              })}
             </div>
-          </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead>
-                <tr className="bg-slate-100 text-slate-700">
-                  <th className="px-3 py-2">
-                    <input
-                      type="checkbox"
-                      checked={
-                        filteredSelectedStudents.length > 0 &&
-                        filteredSelectedStudents.every((student) =>
-                          selectedStudentIds.includes(student.uid),
-                        )
-                      }
-                      onChange={toggleSelectAll}
-                    />
-                  </th>
-                  <th className="px-3 py-2">Name</th>
-                  <th className="px-3 py-2">PRN / Roll</th>
-                  <th className="px-3 py-2">Year</th>
-                  <th className="px-3 py-2">Branch</th>
-                  <th className="px-3 py-2">Matched Subjects</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSelectedStudents.map((student) => (
-                  <tr key={student.uid} className="border-t border-slate-200">
-                    <td className="px-3 py-2">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <Input
+                type="text"
+                value={studentSearch}
+                onChange={(event) => setStudentSearch(event.target.value)}
+                placeholder="Search by student name or PRN"
+                className="w-full sm:max-w-xs"
+              />
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    const rows = filteredSelectedStudents.filter((student) =>
+                      selectedStudentIds.includes(student.uid),
+                    );
+                    if (!rows.length) return;
+                    const fileName = `${String(
+                      selectedGroup?.assignment?.branch || "branch",
+                    )
+                      .toLowerCase()
+                      .replace(
+                        /[^a-z0-9]+/g,
+                        "_",
+                      )}_${String(selectedGroup?.assignment?.year || "year").toLowerCase()}_selected_students.csv`;
+                    downloadCsvFile(fileName, getStudentCsvContent(rows));
+                  }}
+                >
+                  Export Selected CSV
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    const rows = filteredSelectedStudents.filter((student) =>
+                      selectedStudentIds.includes(student.uid),
+                    );
+                    if (!rows.length) return;
+                    exportStudentsPdf("Selected Students Report", rows);
+                  }}
+                >
+                  Export Selected PDF
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    if (!filteredSelectedStudents.length) return;
+                    const fileName = `${String(
+                      selectedGroup?.assignment?.branch || "branch",
+                    )
+                      .toLowerCase()
+                      .replace(
+                        /[^a-z0-9]+/g,
+                        "_",
+                      )}_${String(selectedGroup?.assignment?.year || "year").toLowerCase()}_all_students.csv`;
+                    downloadCsvFile(
+                      fileName,
+                      getStudentCsvContent(filteredSelectedStudents),
+                    );
+                  }}
+                >
+                  Export All CSV
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    if (!filteredSelectedStudents.length) return;
+                    exportStudentsPdf(
+                      "All Students Report",
+                      filteredSelectedStudents,
+                    );
+                  }}
+                >
+                  Export All PDF
+                </Button>
+              </div>
+            </div>
+
+            <TableWrap>
+              <Table>
+                <THead>
+                  <tr>
+                    <TH>
                       <input
                         type="checkbox"
-                        checked={selectedStudentIds.includes(student.uid)}
-                        onChange={() => toggleSelectStudent(student.uid)}
+                        checked={
+                          filteredSelectedStudents.length > 0 &&
+                          filteredSelectedStudents.every((student) =>
+                            selectedStudentIds.includes(student.uid),
+                          )
+                        }
+                        onChange={toggleSelectAll}
                       />
-                    </td>
-                    <td className="px-3 py-2 font-medium text-slate-800">
-                      {student.name}
-                    </td>
-                    <td className="px-3 py-2 text-slate-700">{student.prn}</td>
-                    <td className="px-3 py-2 text-slate-700">{student.year}</td>
-                    <td className="px-3 py-2 text-slate-700">
-                      {student.branch}
-                    </td>
-                    <td className="px-3 py-2 text-slate-700">
-                      {(student.matchedSubjects || []).join(", ") || "-"}
-                    </td>
+                    </TH>
+                    <TH>Name</TH>
+                    <TH>PRN / Roll</TH>
+                    <TH>Year</TH>
+                    <TH>Branch</TH>
+                    <TH>Matched Subjects</TH>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      ) : (
-        <p className="text-slate-500">
-          No assigned branch-year student groups found.
-        </p>
-      )}
-    </div>
+                </THead>
+                <TBody>
+                  {filteredSelectedStudents.map((student) => (
+                    <TR key={student.uid}>
+                      <TD>
+                        <input
+                          type="checkbox"
+                          checked={selectedStudentIds.includes(student.uid)}
+                          onChange={() => toggleSelectStudent(student.uid)}
+                        />
+                      </TD>
+                      <TD className="font-medium text-ink">{student.name}</TD>
+                      <TD className="text-ink-soft">{student.prn}</TD>
+                      <TD className="text-ink-soft">{student.year}</TD>
+                      <TD className="text-ink-soft">{student.branch}</TD>
+                      <TD className="text-ink-soft">
+                        {(student.matchedSubjects || []).join(", ") || "-"}
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </TableWrap>
+          </>
+        ) : (
+          <EmptyState
+            icon={FiUsers}
+            title="No student groups"
+            description="No assigned branch-year student groups found."
+          />
+        )}
+      </CardBody>
+    </Card>
   );
 
   const renderStudyMaterials = () => (
-    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <FiBook className="h-5 w-5 text-[#2f87d9]" />
-          <h2 className="text-xl font-semibold text-slate-800">
-            Study Materials
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={() => router.push("/teacher-studymaterial")}
-          className="inline-flex items-center gap-1 rounded-xl bg-[#2f87d9] px-3 py-1.5 text-xs font-medium text-white"
-        >
-          Manage <FiChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
-      {studyMaterials.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {studyMaterials.map((material) => (
-            <div
-              key={material.id}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-            >
-              <p className="text-base font-semibold text-slate-800">
-                {material.title || "Untitled"}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {material.subject || "Subject"} •{" "}
-                {material.department || "Department"}
-              </p>
-              {material.description ? (
-                <p className="mt-2 line-clamp-3 text-sm text-slate-600">
-                  {material.description}
+    <Card>
+      <CardHeader
+        title="Study Materials"
+        actions={
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => router.push("/teacher-studymaterial")}
+          >
+            Manage <FiChevronRight className="h-4 w-4" />
+          </Button>
+        }
+      />
+      <CardBody>
+        {studyMaterials.length > 0 ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {studyMaterials.map((material) => (
+              <div
+                key={material.id}
+                className="rounded-card border border-line bg-slate-50/60 p-4"
+              >
+                <p className="text-base font-semibold text-ink">
+                  {material.title || "Untitled"}
                 </p>
-              ) : null}
-              {material.fileURL ? (
-                <a
-                  href={material.fileURL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[#2f87d9]"
-                >
-                  Download <FiDownload className="h-4 w-4" />
-                </a>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-slate-500">No uploaded materials found yet.</p>
-      )}
-    </div>
+                <p className="mt-1 text-xs text-ink-soft">
+                  {material.subject || "Subject"} •{" "}
+                  {material.department || "Department"}
+                </p>
+                {material.description ? (
+                  <p className="mt-2 line-clamp-3 text-sm text-ink-soft">
+                    {material.description}
+                  </p>
+                ) : null}
+                {material.fileURL ? (
+                  <a
+                    href={material.fileURL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
+                  >
+                    Download <FiDownload className="h-4 w-4" />
+                  </a>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={FiBook}
+            title="No study materials"
+            description="No uploaded materials found yet."
+          />
+        )}
+      </CardBody>
+    </Card>
   );
 
   const renderTimetable = () => (
-    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <FiClock className="h-5 w-5 text-[#2f87d9]" />
-          <h2 className="text-xl font-semibold text-slate-800">My Timetable</h2>
-        </div>
-        <button
-          type="button"
-          onClick={() => router.push("/teacher-timetable")}
-          className="inline-flex items-center gap-1 rounded-xl bg-[#2f87d9] px-3 py-1.5 text-xs font-medium text-white"
-        >
-          Full Editor <FiChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
-      {allTimetable.length > 0 ? (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200">
-          <table className="w-full min-w-[860px] border-collapse text-sm">
+    <Card>
+      <CardHeader
+        title="My Timetable"
+        actions={
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => router.push("/teacher-timetable")}
+          >
+            Full Editor <FiChevronRight className="h-4 w-4" />
+          </Button>
+        }
+      />
+      <CardBody>
+        {allTimetable.length > 0 ? (
+          <div className="cc-scroll overflow-x-auto rounded-card border border-line">
+            <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
               <tr className="bg-slate-100 text-slate-700">
                 <th className="border border-slate-200 px-3 py-2 text-left">
@@ -1267,33 +1319,35 @@ function TeacherDashboard() {
               ))}
             </tbody>
           </table>
-        </div>
-      ) : (
-        <p className="text-slate-500">No timetable entries found.</p>
-      )}
-    </div>
+          </div>
+        ) : (
+          <EmptyState
+            icon={FiClock}
+            title="No timetable entries"
+            description="No timetable entries found."
+          />
+        )}
+      </CardBody>
+    </Card>
   );
 
   const renderExams = () => (
-    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <FiFileText className="h-5 w-5 text-[#2f87d9]" />
-          <h2 className="text-xl font-semibold text-slate-800">
-            Exam Schedule
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={() => router.push("/exam-timetable")}
-          className="inline-flex items-center gap-1 rounded-xl bg-[#2f87d9] px-3 py-1.5 text-xs font-medium text-white"
-        >
-          Open Full View <FiChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
+    <Card>
+      <CardHeader
+        title="Exam Schedule"
+        actions={
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => router.push("/exam-timetable")}
+          >
+            Open Full View <FiChevronRight className="h-4 w-4" />
+          </Button>
+        }
+      />
+      <CardBody>
       {examTimetableFiles.length > 0 ? (
-        <div className="mb-4 rounded-2xl border border-sky-200 bg-sky-50 p-3">
+        <div className="mb-4 rounded-card border border-sky-200 bg-sky-50 p-3">
           <p className="text-sm font-semibold text-slate-800">
             Official Timetable PDF
           </p>
@@ -1497,25 +1551,31 @@ function TeacherDashboard() {
           })()}
         </div>
       ) : (
-        <p className="text-slate-500">
-          No exams available for assigned class groups.
-        </p>
+        <EmptyState
+          icon={FiFileText}
+          title="No exams scheduled"
+          description="No exams available for assigned class groups."
+        />
       )}
-    </div>
+      </CardBody>
+    </Card>
   );
 
   const renderActionPanel = (title, description, route, cta) => (
-    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6">
-      <h2 className="text-xl font-semibold text-slate-800">{title}</h2>
-      <p className="mt-1 text-sm text-slate-500">{description}</p>
-      <button
-        type="button"
-        onClick={() => router.push(route)}
-        className="mt-4 inline-flex items-center gap-1 rounded-xl bg-[#2f87d9] px-4 py-2 text-sm font-medium text-white"
-      >
-        {cta} <FiChevronRight className="h-4 w-4" />
-      </button>
-    </div>
+    <Card>
+      <CardBody>
+        <h2 className="text-lg font-semibold text-ink">{title}</h2>
+        <p className="mt-1 text-sm text-ink-soft">{description}</p>
+        <Button
+          variant="primary"
+          size="md"
+          className="mt-4"
+          onClick={() => router.push(route)}
+        >
+          {cta} <FiChevronRight className="h-4 w-4" />
+        </Button>
+      </CardBody>
+    </Card>
   );
 
   const renderActivePanel = () => {
@@ -1548,120 +1608,60 @@ function TeacherDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#eef2f6] px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl animate-pulse space-y-5">
-          <div className="h-24 rounded-3xl bg-white" />
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-            <div className="h-96 rounded-3xl bg-white lg:col-span-3" />
-            <div className="h-96 rounded-3xl bg-white lg:col-span-9" />
-          </div>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-40" />
         </div>
+        <SkeletonCards count={4} />
+        <Skeleton className="h-11 w-full" />
+        <SkeletonRows rows={5} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] pb-6 pt-4 sm:pb-10 sm:pt-7">
-      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-        <div className="mb-3 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm lg:hidden">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen((prev) => !prev)}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-slate-800"
-          >
-            <FiChevronDown
-              className={`h-4 w-4 transition-transform ${sidebarOpen ? "rotate-180" : "rotate-0"}`}
-            />
-            <span>
-              <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                Teacher Dashboard
-              </span>
-              <span className="block text-xs font-semibold text-slate-800">
-                {navItems.find((item) => item.id === activeTab)?.label ||
-                  "Overview"}
-              </span>
-            </span>
-          </button>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title={`Welcome, ${teacherName}`}
+        description={`${department || "Department"} • ${todayName}`}
+      />
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          <aside className="lg:col-span-3">
-            <AnimatePresence initial={false}>
-              {sidebarOpen ? (
-                <motion.div
-                  initial={{ opacity: 0, y: -12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  className="mb-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:hidden"
-                >
-                  <div className="p-2.5">
-                    {navItems.map((item) => {
-                      const isActive = activeTab === item.id;
-                      const Icon = item.icon;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => {
-                            setActiveTab(item.id);
-                            setSidebarOpen(false);
-                          }}
-                          className={`mb-1 flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-medium transition ${
-                            isActive
-                              ? "bg-[#e9f2ff] text-[#1f6fb7]"
-                              : "text-slate-700 hover:bg-slate-100"
-                          }`}
-                        >
-                          <span className="flex items-center gap-2">
-                            <Icon className="h-4 w-4" /> {item.label}
-                          </span>
-                          <FiChevronRight className="h-4 w-4" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-
-            <div className="hidden overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:block">
-              <div className="border-b border-slate-200 bg-[#f8fafc] px-4 py-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Teacher Menu
-                </p>
-                <p className="text-lg font-semibold text-slate-800">
-                  Dashboard
-                </p>
-              </div>
-              <div className="p-3">
-                {navItems.map((item) => {
-                  const isActive = activeTab === item.id;
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setActiveTab(item.id)}
-                      className={`mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium transition ${
-                        isActive
-                          ? "bg-[#e9f2ff] text-[#1f6fb7]"
-                          : "text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <Icon className="h-4 w-4" /> {item.label}
-                      </span>
-                      <FiChevronRight className="h-4 w-4" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </aside>
-
-          <main className="lg:col-span-9">{renderActivePanel()}</main>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Today's Classes"
+          value={todaysClasses.length}
+          icon={CalendarDays}
+          tone="brand"
+          hint={todayName}
+        />
+        <StatCard
+          label="Weekly Classes"
+          value={upcomingClasses}
+          icon={CalendarRange}
+          tone="info"
+        />
+        <StatCard
+          label="Active Announcements"
+          value={unreadAnnouncements}
+          icon={Bell}
+          tone="warning"
+        />
+        <StatCard
+          label="Assigned Courses"
+          value={teacherAssignments.length}
+          icon={BookOpen}
+          tone="success"
+        />
       </div>
+
+      <Tabs
+        items={navItems.map((item) => ({ value: item.id, label: item.label }))}
+        value={activeTab}
+        onChange={(value) => setActiveTab(value)}
+      />
+
+      <div>{renderActivePanel()}</div>
     </div>
   );
 }

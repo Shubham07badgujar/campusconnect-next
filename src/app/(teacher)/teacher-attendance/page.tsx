@@ -23,7 +23,33 @@ import {
   markAttendanceByTeacher,
   startAttendanceSession,
 } from "@/lib/client/attendanceService";
-import { FiArrowLeft } from "react-icons/fi";
+import {
+  Users,
+  UserCheck,
+  UserX,
+  CalendarClock,
+  RefreshCw,
+  FileDown,
+  FileText,
+  Trash2,
+  Eye,
+} from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import StatCard from "@/components/ui/StatCard";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { Field, Input, Select } from "@/components/ui/Field";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
+import { PageLoader, EmptyState } from "@/components/ui/States";
 
 const TEACHER_QR_SCAN_COOLDOWN_MS = 3500;
 
@@ -1127,109 +1153,104 @@ export default function AttendancePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-slate-600">
-        Loading attendance workspace...
-      </div>
-    );
+    return <PageLoader label="Loading attendance workspace..." />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-6 sm:px-6">
-      <div className="mx-auto max-w-7xl space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Smart Attendance
-            </h1>
-            <p className="text-sm text-slate-600">
-              Real-time biometric attendance with anti-proxy validation and
-              analytics.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => router.push("/teacher-dashboard")}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:px-4 sm:py-2 sm:text-sm"
-            >
-              <FiArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </button>
-            <button
-              type="button"
-              onClick={() => setStartOpen(true)}
-              disabled={
-                Boolean(activeSession) || availableLectures.length === 0
-              }
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-            >
-              Mark Attendance
-            </button>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Smart Attendance"
+        description="Real-time biometric attendance with anti-proxy validation and analytics."
+        actions={
+          <Button
+            type="button"
+            variant="success"
+            onClick={() => setStartOpen(true)}
+            disabled={Boolean(activeSession) || availableLectures.length === 0}
+          >
+            Mark Attendance
+          </Button>
+        }
+      />
 
-        {activeSession ? (
-          <AttendanceSessionDashboard
-            session={activeSession}
-            records={records}
-            joinedStudents={joinedStudents}
-            heatmapPoints={heatmapPoints}
-            onScanStudent={handleScan}
-            onRefresh={() =>
-              refreshActiveSessionData(activeSession, {
-                notifyOnError: true,
-                notifyOnSuccess: true,
-              })
-            }
-            refreshing={refreshingSessionData}
-            onEndSession={handleEnd}
-            ending={ending}
-          />
-        ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-            {availableLectures.length > 0
-              ? "No active attendance session. Click Mark Attendance to start."
-              : "No timetable lectures found. Add lectures in timetable before starting attendance."}
-          </div>
-        )}
+      {activeSession ? (
+        <AttendanceSessionDashboard
+          session={activeSession}
+          records={records}
+          joinedStudents={joinedStudents}
+          heatmapPoints={heatmapPoints}
+          onScanStudent={handleScan}
+          onRefresh={() =>
+            refreshActiveSessionData(activeSession, {
+              notifyOnError: true,
+              notifyOnSuccess: true,
+            })
+          }
+          refreshing={refreshingSessionData}
+          onEndSession={handleEnd}
+          ending={ending}
+        />
+      ) : (
+        <EmptyState
+          icon={CalendarClock}
+          title={
+            availableLectures.length > 0
+              ? "No active attendance session"
+              : "No timetable lectures found"
+          }
+          description={
+            availableLectures.length > 0
+              ? "Click Mark Attendance to start a live session."
+              : "Add lectures in timetable before starting attendance."
+          }
+        />
+      )}
 
-        <AttendanceAnalytics analytics={analytics} />
+      <AttendanceAnalytics analytics={analytics} />
 
-        {endedSessionSummary ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold text-slate-900">
-                Last Ended Session Summary
-              </h2>
-              <button
+      {endedSessionSummary ? (
+        <Card>
+          <CardHeader
+            title="Last Ended Session Summary"
+            actions={
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setEndedSessionSummary(null)}
-                className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700"
               >
                 Dismiss
-              </button>
+              </Button>
+            }
+          />
+          <CardBody className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <StatCard
+                label="Total Students"
+                value={Number(endedSessionSummary.enrolledStudentsCount || 0)}
+                icon={Users}
+                tone="info"
+              />
+              <StatCard
+                label="Present"
+                value={Number(endedSessionSummary.presentCount || 0)}
+                icon={UserCheck}
+                tone="success"
+              />
+              <StatCard
+                label="Absent"
+                value={Number(endedSessionSummary.absentCount || 0)}
+                icon={UserX}
+                tone="danger"
+              />
             </div>
 
-            <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-              <div className="rounded-lg bg-sky-50 p-3 text-sky-700">
-                Total Students:{" "}
-                {Number(endedSessionSummary.enrolledStudentsCount || 0)}
-              </div>
-              <div className="rounded-lg bg-emerald-50 p-3 text-emerald-700">
-                Present: {Number(endedSessionSummary.presentCount || 0)}
-              </div>
-              <div className="rounded-lg bg-rose-50 p-3 text-rose-700">
-                Absent: {Number(endedSessionSummary.absentCount || 0)}
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="rounded-card border border-emerald-200 bg-emerald-50 p-3">
                 <p className="text-sm font-semibold text-emerald-800">
                   Present Students
                 </p>
-                <div className="mt-2 max-h-44 overflow-y-auto text-xs text-emerald-700">
+                <div className="cc-scroll mt-2 max-h-44 overflow-y-auto text-xs text-emerald-700">
                   {(Array.isArray(endedSessionSummary.presentStudents)
                     ? endedSessionSummary.presentStudents
                     : []
@@ -1248,11 +1269,11 @@ export default function AttendancePage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-rose-200 bg-rose-50 p-3">
+              <div className="rounded-card border border-rose-200 bg-rose-50 p-3">
                 <p className="text-sm font-semibold text-rose-800">
                   Absent Students
                 </p>
-                <div className="mt-2 max-h-44 overflow-y-auto text-xs text-rose-700">
+                <div className="cc-scroll mt-2 max-h-44 overflow-y-auto text-xs text-rose-700">
                   {(Array.isArray(endedSessionSummary.absentStudents)
                     ? endedSessionSummary.absentStudents
                     : []
@@ -1271,53 +1292,55 @@ export default function AttendancePage() {
                 </div>
               </div>
             </div>
-          </div>
-        ) : null}
+          </CardBody>
+        </Card>
+      ) : null}
 
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Subject Attendance Management
-            </h2>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
+      <Card>
+        <CardHeader
+          title="Subject Attendance Management"
+          actions={
+            <>
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() =>
                   loadSubjectStudents(selectedSubjectId, selectedSubjectName, {
                     notifyOnSuccess: true,
                     notifyOnError: true,
                   })
                 }
+                loading={subjectLoading}
                 disabled={subjectLoading || !selectedSubjectId}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-60"
               >
+                {!subjectLoading ? <RefreshCw className="h-3.5 w-3.5" /> : null}
                 {subjectLoading ? "Refreshing..." : "Refresh Students"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="success"
+                size="sm"
                 onClick={handleExportSubjectCsv}
                 disabled={filteredSubjectStudents.length === 0}
-                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
               >
-                Export CSV
-              </button>
-              <button
+                <FileDown className="h-3.5 w-3.5" /> Export CSV
+              </Button>
+              <Button
                 type="button"
+                size="sm"
                 onClick={handleExportSubjectPdf}
                 disabled={filteredSubjectStudents.length === 0}
-                className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
               >
-                Export PDF
-              </button>
-            </div>
-          </div>
-
+                <FileText className="h-3.5 w-3.5" /> Export PDF
+              </Button>
+            </>
+          }
+        />
+        <CardBody className="space-y-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-xs font-medium uppercase text-slate-500">
-                Assigned Subject
-              </label>
-              <select
+            <Field label="Assigned Subject">
+              <Select
                 value={selectedSubjectId}
                 onChange={(event) => {
                   const nextSubjectId = event.target.value;
@@ -1328,7 +1351,6 @@ export default function AttendancePage() {
                   setSelectedSubjectName(nextSubject?.subjectName || "");
                   setAnalyticsSubjectId(nextSubjectId);
                 }}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
               >
                 <option value="">Select subject</option>
                 {assignedSubjects.map((subject) => (
@@ -1336,86 +1358,72 @@ export default function AttendancePage() {
                     {subject.subjectName}
                   </option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </Field>
 
-            <div>
-              <label className="mb-1 block text-xs font-medium uppercase text-slate-500">
-                Search Student
-              </label>
-              <input
+            <Field label="Search Student">
+              <Input
                 value={subjectSearch}
                 onChange={(event) => setSubjectSearch(event.target.value)}
                 placeholder="Search by name or roll number"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="mb-1 block text-xs font-medium uppercase text-slate-500">
-                Filter
-              </label>
-              <select
+            <Field label="Filter">
+              <Select
                 value={subjectFilter}
                 onChange={(event) => setSubjectFilter(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
               >
                 <option value="all">All Students</option>
                 <option value="below75">Below 75%</option>
                 <option value="aboveOrEqual75">75% and Above</option>
-              </select>
-            </div>
+              </Select>
+            </Field>
           </div>
 
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+          <Badge tone="neutral">
+            <Users className="h-3.5 w-3.5" />
             Total enrolled students in selected subject: {subjectStudentsCount}
-          </div>
+          </Badge>
 
-          <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="bg-slate-50 text-slate-600">
+          <TableWrap>
+            <Table className="min-w-[760px]">
+              <THead>
                 <tr>
-                  <th className="px-3 py-2">Student Name</th>
-                  <th className="px-3 py-2">Roll Number / ID</th>
-                  <th className="px-3 py-2">Attendance %</th>
-                  <th className="px-3 py-2">Total Classes</th>
-                  <th className="px-3 py-2">Classes Attended</th>
+                  <TH>Student Name</TH>
+                  <TH>Roll Number / ID</TH>
+                  <TH>Attendance %</TH>
+                  <TH>Total Classes</TH>
+                  <TH>Classes Attended</TH>
                 </tr>
-              </thead>
-              <tbody>
+              </THead>
+              <TBody>
                 {filteredSubjectStudents.map((student) => (
-                  <tr
-                    key={student.studentId}
-                    className="border-t border-slate-100"
-                  >
-                    <td className="px-3 py-2">{student.studentName || "-"}</td>
-                    <td className="px-3 py-2">
-                      {student.prn || student.studentId || "-"}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={`rounded px-2 py-1 text-xs font-medium ${
+                  <TR key={student.studentId}>
+                    <TD className="font-medium">
+                      {student.studentName || "-"}
+                    </TD>
+                    <TD>{student.prn || student.studentId || "-"}</TD>
+                    <TD>
+                      <Badge
+                        tone={
                           Number(student.attendancePercentage || 0) < 75
-                            ? "bg-rose-100 text-rose-700"
-                            : "bg-emerald-100 text-emerald-700"
-                        }`}
+                            ? "danger"
+                            : "success"
+                        }
                       >
                         {toPercentLabel(student.attendancePercentage)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2">
-                      {Number(student.totalClasses || 0)}
-                    </td>
-                    <td className="px-3 py-2">
-                      {Number(student.attendedClasses || 0)}
-                    </td>
-                  </tr>
+                      </Badge>
+                    </TD>
+                    <TD>{Number(student.totalClasses || 0)}</TD>
+                    <TD>{Number(student.attendedClasses || 0)}</TD>
+                  </TR>
                 ))}
                 {filteredSubjectStudents.length === 0 ? (
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-3 py-8 text-center text-slate-500"
+                      className="px-4 py-8 text-center text-sm text-ink-soft"
                     >
                       {subjectLoading
                         ? "Loading subject attendance..."
@@ -1423,30 +1431,36 @@ export default function AttendancePage() {
                     </td>
                   </tr>
                 ) : null}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TBody>
+            </Table>
+          </TableWrap>
+        </CardBody>
+      </Card>
 
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Past Attendance Sessions
-            </h2>
-            <button
+      <Card>
+        <CardHeader
+          title="Past Attendance Sessions"
+          actions={
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={refreshSessionHistory}
-              className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700"
+              loading={historyLoading}
               disabled={historyLoading}
             >
+              {!historyLoading ? <RefreshCw className="h-3.5 w-3.5" /> : null}
               {historyLoading ? "Refreshing..." : "Refresh"}
-            </button>
-          </div>
-
+            </Button>
+          }
+        />
+        <CardBody>
           {sessionHistory.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              No ended sessions found yet.
-            </p>
+            <EmptyState
+              icon={CalendarClock}
+              title="No past sessions"
+              description="No ended sessions found yet."
+            />
           ) : (
             <div className="space-y-3">
               {sessionHistory.map((session) => {
@@ -1455,45 +1469,51 @@ export default function AttendancePage() {
                 return (
                   <div
                     key={sessionId}
-                    className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                    className="rounded-card border border-line bg-canvas p-4"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-slate-800">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-ink">
                           {session.subjectName || "Subject"}
                         </p>
-                        <p className="text-xs text-slate-600">
+                        <p className="text-xs text-ink-soft">
                           Lecture: {session.day || "-"} |{" "}
                           {session.lectureStartTime || "--:--"} -{" "}
                           {session.lectureEndTime || "--:--"}
                         </p>
-                        <p className="text-xs text-slate-600">
+                        <p className="text-xs text-ink-soft">
                           Session: {sessionId || "-"}
                         </p>
-                        <p className="text-xs text-slate-600">
+                        <p className="text-xs text-ink-soft">
                           Date: {session.date || "-"} | Ended:{" "}
                           {formatDateTime(session.endTimeMs || session.endTime)}
                         </p>
                       </div>
-                      <div className="text-right text-xs text-slate-700">
-                        <p>Present: {Number(session.presentCount || 0)}</p>
-                        <p>
-                          Enrolled: {Number(session.enrolledStudentsCount || 0)}
-                        </p>
-                        <p>Absent: {Number(session.absentCount || 0)}</p>
+                      <div className="flex shrink-0 flex-wrap gap-1.5">
+                        <Badge tone="success">
+                          Present {Number(session.presentCount || 0)}
+                        </Badge>
+                        <Badge tone="info">
+                          Enrolled {Number(session.enrolledStudentsCount || 0)}
+                        </Badge>
+                        <Badge tone="danger">
+                          Absent {Number(session.absentCount || 0)}
+                        </Badge>
                       </div>
                     </div>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         onClick={() => openSessionDetails(session)}
-                        className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700"
                       >
-                        View Details
-                      </button>
-                      <button
+                        <Eye className="h-3.5 w-3.5" /> View Details
+                      </Button>
+                      <Button
                         type="button"
+                        size="sm"
                         onClick={() =>
                           handleExportSessionCsv(
                             session,
@@ -1502,15 +1522,20 @@ export default function AttendancePage() {
                               : [],
                           )
                         }
+                        loading={exportingSessionId === sessionId}
                         disabled={exportingSessionId === sessionId}
-                        className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                       >
+                        {exportingSessionId !== sessionId ? (
+                          <FileDown className="h-3.5 w-3.5" />
+                        ) : null}
                         {exportingSessionId === sessionId
                           ? "Exporting..."
                           : "Export CSV"}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         onClick={() =>
                           handleExportSessionPdf(
                             session,
@@ -1519,31 +1544,39 @@ export default function AttendancePage() {
                               : [],
                           )
                         }
+                        loading={exportingSessionPdfId === sessionId}
                         disabled={exportingSessionPdfId === sessionId}
-                        className="rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                       >
+                        {exportingSessionPdfId !== sessionId ? (
+                          <FileText className="h-3.5 w-3.5" />
+                        ) : null}
                         {exportingSessionPdfId === sessionId
                           ? "Exporting..."
                           : "Export PDF"}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="danger"
+                        size="sm"
                         onClick={() => handleDeleteSession(session)}
+                        loading={deletingSessionId === sessionId}
                         disabled={deletingSessionId === sessionId}
-                        className="rounded-md bg-rose-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                       >
+                        {deletingSessionId !== sessionId ? (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        ) : null}
                         {deletingSessionId === sessionId
                           ? "Deleting..."
                           : "Delete"}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
-      </div>
+        </CardBody>
+      </Card>
 
       <PastSessionDetailsModal
         isOpen={detailsOpen}

@@ -2,6 +2,7 @@
 
 import React from "react";
 import LectureSlotCard from "@/components/teacher/LectureSlotCard";
+import { TableWrap } from "@/components/ui/Table";
 
 const toMinutes = (timeText = "") => {
   const [h, m] = String(timeText || "00:00")
@@ -34,13 +35,18 @@ export default function TimetableGrid({
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-      <table className="min-w-[920px] w-full text-sm border-collapse">
+    <TableWrap>
+      <table className="min-w-[920px] w-full border-collapse text-sm">
         <thead>
-          <tr className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white">
-            <th className="p-3 text-left border border-blue-600">Time</th>
+          <tr className="bg-brand-600 text-white">
+            <th className="border border-brand-500 p-3 text-left font-semibold">
+              Time
+            </th>
             {days.map((day) => (
-              <th key={day} className="p-3 text-center border border-blue-600">
+              <th
+                key={day}
+                className="border border-brand-500 p-3 text-center font-semibold"
+              >
                 {day}
               </th>
             ))}
@@ -48,8 +54,8 @@ export default function TimetableGrid({
         </thead>
         <tbody>
           {timeSlots.map((slot) => (
-            <tr key={slot.label} className="border-b">
-              <td className="p-3 border bg-gray-50 font-medium text-gray-700">
+            <tr key={slot.label}>
+              <td className="border border-line bg-slate-50 p-3 font-medium text-ink-soft">
                 {slot.label}
               </td>
               {days.map((day) => {
@@ -57,7 +63,7 @@ export default function TimetableGrid({
                 return (
                   <td
                     key={`${day}-${slot.label}`}
-                    className="p-2 border align-top min-h-[100px]"
+                    className="min-h-[100px] border border-line p-2 align-top"
                   >
                     {lecture ? (
                       <LectureSlotCard
@@ -65,7 +71,7 @@ export default function TimetableGrid({
                         isOwnLecture={lecture.teacherId === currentTeacherId}
                       />
                     ) : (
-                      <div className="h-[78px] rounded border border-dashed border-gray-200 bg-gray-50" />
+                      <div className="h-[78px] rounded-lg border border-dashed border-line bg-slate-50/60" />
                     )}
                   </td>
                 );
@@ -74,6 +80,6 @@ export default function TimetableGrid({
           ))}
         </tbody>
       </table>
-    </div>
+    </TableWrap>
   );
 }

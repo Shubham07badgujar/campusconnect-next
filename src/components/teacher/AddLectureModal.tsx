@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
+import { Field, Input, Select } from "@/components/ui/Field";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
@@ -39,8 +42,6 @@ export default function AddLectureModal({
     }));
   }, []);
 
-  if (!open) return null;
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     await onSubmit({
@@ -52,147 +53,112 @@ export default function AddLectureModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b px-5 py-3">
-          <h2 className="text-lg font-semibold text-gray-800">
-            Add Lecture Slot
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
-          >
-            Close
-          </button>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Add Lecture Slot"
+      description="Add a lecture to the shared class timetable."
+      size="md"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Field label="Branch">
+            <Input value={branch} readOnly />
+          </Field>
+          <Field label="Year">
+            <Input value={year} readOnly />
+          </Field>
+          <Field label="Semester">
+            <Input value={`Semester ${semester}`} readOnly />
+          </Field>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 p-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <input
-              value={branch}
-              readOnly
-              className="rounded border border-gray-300 bg-gray-100 px-3 py-2 text-sm"
-            />
-            <input
-              value={year}
-              readOnly
-              className="rounded border border-gray-300 bg-gray-100 px-3 py-2 text-sm"
-            />
-            <input
-              value={`Semester ${semester}`}
-              readOnly
-              className="rounded border border-gray-300 bg-gray-100 px-3 py-2 text-sm"
-            />
-          </div>
+        <Field label="Subject" htmlFor="lecture-subject" required>
+          <Select
+            id="lecture-subject"
+            required
+            value={formData.subjectName}
+            onChange={(event) =>
+              setFormData((prev) => ({
+                ...prev,
+                subjectName: event.target.value,
+              }))
+            }
+          >
+            <option value="">Select Subject</option>
+            {allowedSubjects.map((subject) => (
+              <option key={subject} value={subject}>
+                {subject}
+              </option>
+            ))}
+          </Select>
+        </Field>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Subject
-            </label>
-            <select
-              required
-              value={formData.subjectName}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Field label="Day" htmlFor="lecture-day">
+            <Select
+              id="lecture-day"
+              value={formData.day}
+              onChange={(event) =>
+                setFormData((prev) => ({ ...prev, day: event.target.value }))
+              }
+            >
+              {DAYS.map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field label="Start" htmlFor="lecture-start">
+            <Select
+              id="lecture-start"
+              value={formData.startTime}
               onChange={(event) =>
                 setFormData((prev) => ({
                   ...prev,
-                  subjectName: event.target.value,
+                  startTime: event.target.value,
                 }))
               }
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
             >
-              <option value="">Select Subject</option>
-              {allowedSubjects.map((subject) => (
-                <option key={subject} value={subject}>
-                  {subject}
+              {slotOptions.map((slot) => (
+                <option key={slot.start} value={slot.start}>
+                  {slot.start}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </Field>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Day
-              </label>
-              <select
-                value={formData.day}
-                onChange={(event) =>
-                  setFormData((prev) => ({ ...prev, day: event.target.value }))
-                }
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-              >
-                {DAYS.map((day) => (
-                  <option key={day} value={day}>
-                    {day}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Start
-              </label>
-              <select
-                value={formData.startTime}
-                onChange={(event) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    startTime: event.target.value,
-                  }))
-                }
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-              >
-                {slotOptions.map((slot) => (
-                  <option key={slot.start} value={slot.start}>
-                    {slot.start}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                End
-              </label>
-              <select
-                value={formData.endTime}
-                onChange={(event) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    endTime: event.target.value,
-                  }))
-                }
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-              >
-                {slotOptions.map((slot) => (
-                  <option key={slot.end} value={slot.end}>
-                    {slot.end}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700"
+          <Field label="End" htmlFor="lecture-end">
+            <Select
+              id="lecture-end"
+              value={formData.endTime}
+              onChange={(event) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  endTime: event.target.value,
+                }))
+              }
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-            >
-              {isSubmitting ? "Saving..." : "Add Lecture"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+              {slotOptions.map((slot) => (
+                <option key={slot.end} value={slot.end}>
+                  {slot.end}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" loading={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Add Lecture"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

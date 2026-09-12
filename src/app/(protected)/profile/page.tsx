@@ -7,6 +7,7 @@ import { doc, getDoc } from "firebase/firestore";
 import StudentProfile from "@/components/student/StudentProfile";
 import TeacherProfile from "./TeacherProfile";
 import AdminProfile from "./AdminProfile";
+import { PageLoader } from "@/components/ui/States";
 
 function Profile() {
   const [user, setUser] = useState<any>(null);
@@ -120,15 +121,11 @@ function Profile() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <PageLoader label="Loading your profile..." />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center py-10 px-4">
+    <div className="animate-fade-up">
       {userRole === "student" && <StudentProfile userData={userData} />}
       {userRole === "teacher" && <TeacherProfile userData={userData} />}
       {userRole === "admin" && <AdminProfile userData={userData} />}

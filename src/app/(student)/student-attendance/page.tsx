@@ -15,6 +15,22 @@ import { toast } from "react-toastify";
 import AttendanceSessionCard from "@/components/student/AttendanceSessionCard";
 import FingerprintVerification from "@/components/student/FingerprintVerification";
 import { useSocket } from "@/context/SocketContext";
+import { RefreshCw, CalendarClock, BarChart3 } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Tabs from "@/components/ui/Tabs";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
+import { PageLoader, EmptyState } from "@/components/ui/States";
 import {
   createFaceChallenge,
   ensureTrustedDevice,
@@ -470,81 +486,49 @@ function StudentAttendancePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-slate-600">
-        Loading attendance details...
-      </div>
-    );
+    return <PageLoader label="Loading attendance details..." />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-6 sm:px-6">
-      <div className="mx-auto max-w-6xl space-y-5">
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Attendance</h1>
-              <p className="text-sm text-slate-600">
-                Join active sessions, verify biometric, and use profile QR as
-                backup.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => router.push("/student-dashboard")}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700"
-            >
-              Back to Dashboard
-            </button>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Attendance"
+        description="Join active sessions, verify biometric, and use profile QR as backup."
+      />
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <h3 className="text-sm font-semibold text-slate-700">
-                Attendance Method
-              </h3>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAttendanceMethod("biometric")}
-                  className={`rounded-lg px-3 py-2 text-xs font-medium ${
-                    attendanceMethod === "biometric"
-                      ? "bg-emerald-600 text-white"
-                      : "border border-slate-300 text-slate-700"
-                  }`}
-                >
-                  Fingerprint
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAttendanceMethod("face")}
-                  className={`rounded-lg px-3 py-2 text-xs font-medium ${
-                    attendanceMethod === "face"
-                      ? "bg-sky-600 text-white"
-                      : "border border-slate-300 text-slate-700"
-                  }`}
-                >
-                  Face Recognition
-                </button>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <Card>
+            <CardHeader title="Attendance Method" />
+            <CardBody>
+              <Tabs
+                items={[
+                  { value: "biometric", label: "Fingerprint" },
+                  { value: "face", label: "Face Recognition" },
+                ]}
+                value={attendanceMethod}
+                onChange={(value) => setAttendanceMethod(value)}
+              />
+            </CardBody>
+          </Card>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-slate-700">
+          <Card>
+            <CardHeader
+              title={
+                <span className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                    <CalendarClock className="h-3.5 w-3.5" />
+                  </span>
                   Active Attendance Sessions
-                </h3>
-                <button
-                  type="button"
-                  onClick={refreshSessions}
-                  className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-700"
-                >
-                  Refresh
-                </button>
-              </div>
-
+                </span>
+              }
+              actions={
+                <Button variant="secondary" size="sm" onClick={refreshSessions}>
+                  <RefreshCw className="h-3.5 w-3.5" /> Refresh
+                </Button>
+              }
+            />
+            <CardBody>
               {activeSessions.length > 0 ? (
                 <div className="space-y-3">
                   {activeSessions.map((session) => {
@@ -553,51 +537,49 @@ function StudentAttendancePage() {
                     return (
                       <div
                         key={sessionId}
-                        className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                        className={`rounded-xl border p-3 ${
+                          isJoined
+                            ? "border-emerald-200 bg-emerald-50/60"
+                            : "border-line bg-slate-50/70"
+                        }`}
                       >
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
-                            <p className="font-semibold text-slate-800">
+                            <p className="font-semibold text-ink">
                               {session.subjectName || "Subject"}
                             </p>
-                            <p className="text-xs text-slate-600">
+                            <p className="text-xs text-ink-soft">
                               {session.teacherName || "Teacher"} |{" "}
                               {session.branch || "-"} {session.year || ""}
                               {session.semester
                                 ? ` / Sem ${session.semester}`
                                 : ""}
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-ink-faint">
                               {session.day || "-"} |{" "}
                               {session.lectureStartTime || "--:--"} -{" "}
                               {session.lectureEndTime || "--:--"}
                             </p>
                           </div>
                           {isJoined ? (
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                disabled
-                                className="rounded-lg border border-emerald-300 bg-emerald-100 px-3 py-2 text-xs font-medium text-emerald-700"
-                              >
-                                Joined
-                              </button>
-                              <button
-                                type="button"
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge tone="success">Joined</Badge>
+                              <Button
+                                variant="secondary"
+                                size="sm"
                                 onClick={() => handleLeaveSession(sessionId)}
-                                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700"
                               >
                                 Leave Session
-                              </button>
+                              </Button>
                             </div>
                           ) : (
-                            <button
-                              type="button"
+                            <Button
+                              variant="success"
+                              size="sm"
                               onClick={() => handleJoinSession(sessionId)}
-                              className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white"
                             >
                               Join Session
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -605,147 +587,162 @@ function StudentAttendancePage() {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-slate-500">
-                  No active attendance sessions are available right now.
-                </p>
+                <EmptyState
+                  icon={CalendarClock}
+                  title="No active sessions"
+                  description="No active attendance sessions are available right now."
+                />
               )}
-            </div>
+            </CardBody>
+          </Card>
 
-            {attendanceMethod === "biometric" ? (
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs text-slate-500">
-                    Passkey verification:{" "}
-                    {webauthnResult ? "Ready" : "Not verified yet"}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
+          {attendanceMethod === "biometric" ? (
+            <div className="space-y-6">
+              <Card>
+                <CardBody className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-ink-soft">
+                    Passkey verification:
+                    {webauthnResult ? (
+                      <Badge tone="success">Ready</Badge>
+                    ) : (
+                      <Badge tone="neutral">Not verified yet</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-ink-faint">
                     Each verification is valid for one attendance mark of the
                     joined session only.
                   </p>
-                </div>
+                </CardBody>
+              </Card>
 
-                <FingerprintVerification
-                  sessionId={String(
-                    joinedSession?.sessionId || joinedSession?.id || "",
-                  )}
-                  onVerified={(data: any) => {
-                    if (data?.verified && data?.challengeId) {
-                      setWebauthnResult({
-                        challengeId: data.challengeId,
-                        credential: data.credential,
-                      });
-                    } else if (!data?.registered) {
-                      setWebauthnResult(null);
-                    }
-                  }}
-                  disabled={!joinedSession}
-                />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <p className="text-xs text-slate-500">
-                    Face profile status:{" "}
-                    {faceRegistered ? "Registered" : "Not Registered"}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
+              <FingerprintVerification
+                sessionId={String(
+                  joinedSession?.sessionId || joinedSession?.id || "",
+                )}
+                onVerified={(data: any) => {
+                  if (data?.verified && data?.challengeId) {
+                    setWebauthnResult({
+                      challengeId: data.challengeId,
+                      credential: data.credential,
+                    });
+                  } else if (!data?.registered) {
+                    setWebauthnResult(null);
+                  }
+                }}
+                disabled={!joinedSession}
+              />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <Card>
+                <CardBody className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-ink-soft">
+                    Face profile status:
+                    {faceRegistered ? (
+                      <Badge tone="success">Registered</Badge>
+                    ) : (
+                      <Badge tone="warning">Not Registered</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-ink-faint">
                     Face registration is required only once. After that, only
                     face verification is needed for attendance marking.
                   </p>
-                </div>
-                {!faceRegistered ? (
-                  <FaceRegistration
-                    studentId={student?.uid}
-                    onRegistered={refreshFaceStatus}
-                  />
-                ) : null}
-                <FaceRecognitionAttendance
-                  disabled={!joinedSession || !faceRegistered}
-                  ready={faceReady}
-                  onVerified={(payload: any) => {
-                    const frames = Array.isArray(payload?.descriptors)
-                      ? payload.descriptors.filter(
-                          (frame: any) =>
-                            Array.isArray(frame) && frame.length === 128,
-                        )
-                      : [];
-                    const ready =
-                      frames.length >= 2 && Boolean(payload?.livenessPassed);
-                    setFaceReady(ready);
-                    setFaceDescriptors(ready ? frames : []);
-                  }}
+                </CardBody>
+              </Card>
+              {!faceRegistered ? (
+                <FaceRegistration
+                  studentId={student?.uid}
+                  onRegistered={refreshFaceStatus}
                 />
-              </div>
-            )}
+              ) : null}
+              <FaceRecognitionAttendance
+                disabled={!joinedSession || !faceRegistered}
+                ready={faceReady}
+                onVerified={(payload: any) => {
+                  const frames = Array.isArray(payload?.descriptors)
+                    ? payload.descriptors.filter(
+                        (frame: any) =>
+                          Array.isArray(frame) && frame.length === 128,
+                      )
+                    : [];
+                  const ready =
+                    frames.length >= 2 && Boolean(payload?.livenessPassed);
+                  setFaceReady(ready);
+                  setFaceDescriptors(ready ? frames : []);
+                }}
+              />
+            </div>
+          )}
 
-            <AttendanceSessionCard
-              session={joinedSession}
-              studentLocation={studentLocation}
-              onMark={handleMark}
-              onLeave={() =>
-                handleLeaveSession(
-                  joinedSession?.sessionId || joinedSession?.id,
-                )
-              }
-              marking={marking}
-              verificationReady={
-                attendanceMethod === "biometric"
-                  ? Boolean(webauthnResult)
-                  : faceReady
-              }
-              verificationLabel={
-                attendanceMethod === "biometric" ? "fingerprint" : "face"
+          <AttendanceSessionCard
+            session={joinedSession}
+            studentLocation={studentLocation}
+            onMark={handleMark}
+            onLeave={() =>
+              handleLeaveSession(joinedSession?.sessionId || joinedSession?.id)
+            }
+            marking={marking}
+            verificationReady={
+              attendanceMethod === "biometric"
+                ? Boolean(webauthnResult)
+                : faceReady
+            }
+            verificationLabel={
+              attendanceMethod === "biometric" ? "fingerprint" : "face"
+            }
+          />
+
+          <Card>
+            <CardHeader
+              title={
+                <span className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                  </span>
+                  Subject Wise Attendance
+                </span>
               }
             />
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <h3 className="text-sm font-semibold text-slate-700">
-                Subject Wise Attendance
-              </h3>
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-600">
-                      <th className="px-3 py-2">Subject</th>
-                      <th className="px-3 py-2">Attended</th>
-                      <th className="px-3 py-2">Total Lectures</th>
-                      <th className="px-3 py-2">Attendance %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+            <CardBody>
+              <TableWrap className="shadow-none">
+                <Table>
+                  <THead>
+                    <TR className="hover:bg-transparent">
+                      <TH>Subject</TH>
+                      <TH>Attended</TH>
+                      <TH>Total Lectures</TH>
+                      <TH>Attendance %</TH>
+                    </TR>
+                  </THead>
+                  <TBody>
                     {subjectAttendance.map((entry) => (
-                      <tr key={entry.id} className="border-t border-slate-100">
-                        <td className="px-3 py-2">
-                          {entry.subjectName || entry.subjectId}
-                        </td>
-                        <td className="px-3 py-2">
-                          {entry.attendedClasses || 0}
-                        </td>
-                        <td className="px-3 py-2">{entry.totalClasses || 0}</td>
-                        <td className="px-3 py-2">
-                          {Number(entry.percentage || 0).toFixed(1)}%
-                        </td>
-                      </tr>
+                      <TR key={entry.id}>
+                        <TD>{entry.subjectName || entry.subjectId}</TD>
+                        <TD>{entry.attendedClasses || 0}</TD>
+                        <TD>{entry.totalClasses || 0}</TD>
+                        <TD>{Number(entry.percentage || 0).toFixed(1)}%</TD>
+                      </TR>
                     ))}
                     {subjectAttendance.length === 0 ? (
-                      <tr>
-                        <td
+                      <TR className="hover:bg-transparent">
+                        <TD
                           colSpan={4}
-                          className="px-3 py-6 text-center text-slate-500"
+                          className="py-6 text-center text-ink-faint"
                         >
                           No attendance stats available yet.
-                        </td>
-                      </tr>
+                        </TD>
+                      </TR>
                     ) : null}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+                  </TBody>
+                </Table>
+              </TableWrap>
+            </CardBody>
+          </Card>
+        </div>
 
-          <div>
-            <StudentQRDisplay studentInfo={student} />
-          </div>
+        <div>
+          <StudentQRDisplay studentInfo={student} />
         </div>
       </div>
     </div>

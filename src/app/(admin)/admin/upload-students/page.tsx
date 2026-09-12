@@ -8,6 +8,21 @@ import {
   FiAlertTriangle,
 } from "react-icons/fi";
 import { auth } from "@/lib/client/firebase";
+import Button from "@/components/ui/Button";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import StatCard from "@/components/ui/StatCard";
+import Badge from "@/components/ui/Badge";
+import PageHeader from "@/components/ui/PageHeader";
+import { Field, Select } from "@/components/ui/Field";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
 
 const API_URL = String("")
   .trim()
@@ -255,376 +270,396 @@ export default function BulkStudentOnboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] px-4 sm:px-6 py-6 sm:py-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <button
-          onClick={() => router.push("/admin-dashboard")}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:px-4 sm:py-2 sm:text-sm"
-        >
-          <FiArrowLeft className="h-4 w-4" /> Back to Dashboard
-        </button>
+    <div className="space-y-6">
+      <PageHeader
+        title="Bulk Student Onboarding"
+        description="Upload final admission list (CSV/PDF/image), parse with OCR or CSV parser, validate entries, and auto-create student accounts with branch/year/semester subject assignment."
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => router.push("/admin-dashboard")}
+          >
+            <FiArrowLeft className="h-4 w-4" /> Back to Dashboard
+          </Button>
+        }
+      />
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
-            Bulk Student Onboarding
-          </h1>
-          <p className="text-slate-600">
-            Upload final admission list (CSV/PDF/image), parse with OCR or CSV
-            parser, validate entries, and auto-create student accounts with
-            branch/year/semester subject assignment.
-          </p>
+      {error && (
+        <div className="rounded-card border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-danger">
+          {error}
         </div>
+      )}
+      {success && (
+        <div className="rounded-card border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {success}
+        </div>
+      )}
 
-        {error && (
-          <div className="bg-red-100 text-red-700 px-4 py-2 rounded">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="bg-green-100 text-green-700 px-4 py-2 rounded">
-            {success}
-          </div>
-        )}
-
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+      <Card>
+        <CardHeader
+          title="Upload & Parse"
+          description="Choose an admission list file, pick a duplicate strategy, then parse, pre-check, and create accounts."
+        />
+        <CardBody className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4 md:items-end">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Admission List File
-              </label>
-              <input
-                type="file"
-                accept=".csv,text/csv,application/pdf,image/*"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="w-full border rounded-lg px-3 py-2"
-              />
-              <p className="text-xs text-slate-500 mt-2">
-                Recommended: CSV with columns Name, PRN, Mobile, Branch, Year,
-                Semester, Email. PDF/image parsing depends on document clarity.
-              </p>
+              <Field
+                label="Admission List File"
+                hint="Recommended: CSV with columns Name, PRN, Mobile, Branch, Year, Semester, Email. PDF/image parsing depends on document clarity."
+              >
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-card border border-dashed border-line bg-slate-50/60 px-4 py-6 text-center transition hover:border-brand-400 hover:bg-brand-50/40">
+                  <FiUpload className="h-6 w-6 text-brand-500" />
+                  <span className="text-sm font-medium text-ink">
+                    {file ? file.name : "Click to choose a CSV, PDF, or image"}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".csv,text/csv,application/pdf,image/*"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                </label>
+              </Field>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Existing PRN Strategy
-              </label>
-              <select
+            <Field label="Existing PRN Strategy">
+              <Select
                 value={duplicateStrategy}
                 onChange={(e) => setDuplicateStrategy(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
               >
                 <option value="skip">
                   Skip existing (mark as already enrolled)
                 </option>
                 <option value="update">Update existing student profile</option>
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <button
+              </Select>
+            </Field>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
                 onClick={runPrecheck}
+                loading={isPrechecking}
                 disabled={isPrechecking || parsedEntries.length === 0}
-                className="flex-1 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg"
+                className="flex-1"
               >
                 {isPrechecking ? "Pre-checking..." : "Pre-check"}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
                 onClick={parseFile}
+                loading={isParsing}
                 disabled={isParsing}
-                className="flex-1 bg-[#2f87d9] hover:bg-[#1f6fb7] text-white px-4 py-2 rounded-lg flex items-center justify-center"
+                className="flex-1"
               >
-                <FiUpload className="mr-2" />{" "}
+                <FiUpload className="h-4 w-4" />{" "}
                 {isParsing ? "Parsing..." : "Parse File"}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="success"
                 onClick={createAccounts}
+                loading={isCreating}
                 disabled={isCreating || parsedEntries.length === 0}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                className="flex-1"
               >
                 {isCreating ? "Creating..." : "Create Accounts"}
-              </button>
+              </Button>
             </div>
           </div>
 
           {parsedEntries.length > 0 && (
-            <div className="mt-4 p-3 rounded-lg bg-slate-50 text-sm">
-              Parsed: <strong>{validationPreview.total}</strong> | Valid:{" "}
-              <strong className="text-green-700">
-                {validationPreview.valid}
-              </strong>{" "}
-              | Invalid:{" "}
-              <strong className="text-red-700">
-                {validationPreview.invalid}
-              </strong>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <StatCard
+                label="Parsed"
+                value={validationPreview.total}
+                tone="info"
+              />
+              <StatCard
+                label="Valid"
+                value={validationPreview.valid}
+                tone="success"
+              />
+              <StatCard
+                label="Invalid"
+                value={validationPreview.invalid}
+                tone="danger"
+              />
             </div>
           )}
-        </div>
+        </CardBody>
+      </Card>
 
-        {parsedEntries.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">
-              Parsed Entries
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-[980px] w-full text-sm border border-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="text-left p-2 border-b">Name</th>
-                    <th className="text-left p-2 border-b">PRN</th>
-                    <th className="text-left p-2 border-b">Phone</th>
-                    <th className="text-left p-2 border-b">Branch</th>
-                    <th className="text-left p-2 border-b">Year</th>
-                    <th className="text-left p-2 border-b">Semester</th>
-                    <th className="text-left p-2 border-b">Contact Email</th>
-                    <th className="text-left p-2 border-b">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
+      {parsedEntries.length > 0 && (
+        <Card>
+          <CardHeader title="Parsed Entries" />
+          <CardBody>
+            <TableWrap className="shadow-none">
+              <Table className="min-w-[980px]">
+                <THead>
+                  <TR className="hover:bg-transparent">
+                    <TH>Name</TH>
+                    <TH>PRN</TH>
+                    <TH>Phone</TH>
+                    <TH>Branch</TH>
+                    <TH>Year</TH>
+                    <TH>Semester</TH>
+                    <TH>Contact Email</TH>
+                    <TH>Status</TH>
+                  </TR>
+                </THead>
+                <TBody>
                   {parsedEntries.map((entry, idx) => {
                     const hasErrors = entry.validationErrors?.length > 0;
                     return (
-                      <tr
-                        key={`${entry.prn || "row"}-${idx}`}
-                        className="border-b"
-                      >
-                        <td className="p-2">{entry.name || "-"}</td>
-                        <td className="p-2">{entry.prn || "-"}</td>
-                        <td className="p-2">{entry.phone || "-"}</td>
-                        <td className="p-2">{entry.branch || "-"}</td>
-                        <td className="p-2">{entry.year || "-"}</td>
-                        <td className="p-2">{entry.semester || "-"}</td>
-                        <td className="p-2">{entry.email || "-"}</td>
-                        <td className="p-2">
+                      <TR key={`${entry.prn || "row"}-${idx}`}>
+                        <TD>{entry.name || "-"}</TD>
+                        <TD>{entry.prn || "-"}</TD>
+                        <TD>{entry.phone || "-"}</TD>
+                        <TD>{entry.branch || "-"}</TD>
+                        <TD>{entry.year || "-"}</TD>
+                        <TD>{entry.semester || "-"}</TD>
+                        <TD>{entry.email || "-"}</TD>
+                        <TD>
                           {hasErrors ? (
-                            <span className="inline-flex items-start text-red-700">
-                              <FiAlertTriangle className="mr-1 mt-0.5" />{" "}
+                            <Badge tone="danger">
+                              <FiAlertTriangle className="h-3.5 w-3.5" />{" "}
                               {entry.validationErrors.join(", ")}
-                            </span>
+                            </Badge>
                           ) : (
-                            <span className="inline-flex items-center text-green-700">
-                              <FiCheckCircle className="mr-1" /> Valid
-                            </span>
+                            <Badge tone="success">
+                              <FiCheckCircle className="h-3.5 w-3.5" /> Valid
+                            </Badge>
                           )}
-                        </td>
-                      </tr>
+                        </TD>
+                      </TR>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+                </TBody>
+              </Table>
+            </TableWrap>
+          </CardBody>
+        </Card>
+      )}
 
-        {precheck && (
-          <div className="bg-white rounded-xl shadow-md border border-slate-200/80 p-5 sm:p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">
-              Database Pre-check
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-              <div className="bg-blue-50 p-3 rounded">
-                Rows: <strong>{precheck.totalRows}</strong>
-              </div>
-              <div className="bg-red-50 p-3 rounded">
-                Duplicate in DB: <strong>{precheck.duplicateDbCount}</strong>
-              </div>
-              <div className="bg-amber-50 p-3 rounded">
-                Duplicate in File:{" "}
-                <strong>{precheck.duplicateFileCount}</strong>
-              </div>
+      {precheck && (
+        <Card>
+          <CardHeader title="Database Pre-check" />
+          <CardBody className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <StatCard label="Rows" value={precheck.totalRows} tone="info" />
+              <StatCard
+                label="Duplicate in DB"
+                value={precheck.duplicateDbCount}
+                tone="danger"
+              />
+              <StatCard
+                label="Duplicate in File"
+                value={precheck.duplicateFileCount}
+                tone="warning"
+              />
             </div>
             {precheck.duplicateInDb?.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="min-w-[820px] w-full text-sm border border-slate-200">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="text-left p-2 border-b">PRN</th>
-                      <th className="text-left p-2 border-b">Name in Upload</th>
-                      <th className="text-left p-2 border-b">Existing UID</th>
-                      <th className="text-left p-2 border-b">Existing Email</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <TableWrap className="shadow-none">
+                <Table className="min-w-[820px]">
+                  <THead>
+                    <TR className="hover:bg-transparent">
+                      <TH>PRN</TH>
+                      <TH>Name in Upload</TH>
+                      <TH>Existing UID</TH>
+                      <TH>Existing Email</TH>
+                    </TR>
+                  </THead>
+                  <TBody>
                     {precheck.duplicateInDb.map((row, idx) => (
-                      <tr key={`${row.prn || idx}-${idx}`} className="border-b">
-                        <td className="p-2">{row.prn || "-"}</td>
-                        <td className="p-2">{row.name || "-"}</td>
-                        <td className="p-2">{row.existingUid || "-"}</td>
-                        <td className="p-2">{row.existingEmail || "-"}</td>
-                      </tr>
+                      <TR key={`${row.prn || idx}-${idx}`}>
+                        <TD>{row.prn || "-"}</TD>
+                        <TD>{row.name || "-"}</TD>
+                        <TD>{row.existingUid || "-"}</TD>
+                        <TD>{row.existingEmail || "-"}</TD>
+                      </TR>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </TBody>
+                </Table>
+              </TableWrap>
             )}
-          </div>
-        )}
+          </CardBody>
+        </Card>
+      )}
 
-        {summary && (
-          <div className="bg-white rounded-xl shadow-md border border-slate-200/80 p-5 sm:p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">
-              Onboarding Summary
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-6 gap-3 mb-4">
-              <div className="bg-blue-50 p-3 rounded">
-                Processed: <strong>{summary.totalProcessed}</strong>
-              </div>
-              <div className="bg-green-50 p-3 rounded">
-                Created: <strong>{summary.createdCount}</strong>
-              </div>
-              <div className="bg-indigo-50 p-3 rounded">
-                Updated: <strong>{summary.updatedCount || 0}</strong>
-              </div>
-              <div className="bg-slate-100 p-3 rounded">
-                Already Enrolled:{" "}
-                <strong>{summary.skippedExistingCount || 0}</strong>
-              </div>
-              <div className="bg-yellow-50 p-3 rounded">
-                Email Sent: <strong>{summary.credentialsSentCount}</strong>
-              </div>
-              <div className="bg-red-50 p-3 rounded">
-                Failed: <strong>{summary.failedCount}</strong>
-              </div>
+      {summary && (
+        <Card>
+          <CardHeader title="Onboarding Summary" />
+          <CardBody className="space-y-6">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <StatCard
+                label="Processed"
+                value={summary.totalProcessed}
+                tone="info"
+              />
+              <StatCard
+                label="Created"
+                value={summary.createdCount}
+                tone="success"
+              />
+              <StatCard
+                label="Updated"
+                value={summary.updatedCount || 0}
+                tone="brand"
+              />
+              <StatCard
+                label="Already Enrolled"
+                value={summary.skippedExistingCount || 0}
+                tone="neutral"
+              />
+              <StatCard
+                label="Email Sent"
+                value={summary.credentialsSentCount}
+                tone="warning"
+              />
+              <StatCard
+                label="Failed"
+                value={summary.failedCount}
+                tone="danger"
+              />
             </div>
 
-            <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="bg-amber-50 p-3 rounded text-amber-800 text-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="rounded-card border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Manual Credential Delivery Needed:{" "}
                 <strong>{summary.manualCredentialCount || 0}</strong>
               </div>
               {summary.manualCredentialEntries?.length > 0 && (
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={downloadManualCredentialsCsv}
-                  className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm"
                 >
                   Export Manual Credentials CSV
-                </button>
+                </Button>
               )}
             </div>
 
             {summary.failedEntries?.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="min-w-[760px] w-full text-sm border border-slate-200">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="text-left p-2 border-b">PRN</th>
-                      <th className="text-left p-2 border-b">Name</th>
-                      <th className="text-left p-2 border-b">Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <TableWrap className="shadow-none">
+                <Table className="min-w-[760px]">
+                  <THead>
+                    <TR className="hover:bg-transparent">
+                      <TH>PRN</TH>
+                      <TH>Name</TH>
+                      <TH>Reason</TH>
+                    </TR>
+                  </THead>
+                  <TBody>
                     {summary.failedEntries.map((f, idx) => (
-                      <tr key={`${f.prn || idx}-${idx}`} className="border-b">
-                        <td className="p-2">{f.prn || "-"}</td>
-                        <td className="p-2">{f.name || "-"}</td>
-                        <td className="p-2 text-red-700">{f.reason}</td>
-                      </tr>
+                      <TR key={`${f.prn || idx}-${idx}`}>
+                        <TD>{f.prn || "-"}</TD>
+                        <TD>{f.name || "-"}</TD>
+                        <TD className="text-danger">{f.reason}</TD>
+                      </TR>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </TBody>
+                </Table>
+              </TableWrap>
             )}
 
             {summary.manualCredentialEntries?.length > 0 && (
-              <div className="mt-6 overflow-x-auto">
-                <h3 className="text-md font-semibold text-amber-700 mb-2">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-amber-700">
                   Students Needing Manual Credential Sharing
                 </h3>
-                <table className="min-w-[980px] w-full text-sm border border-slate-200">
-                  <thead className="bg-amber-50">
-                    <tr>
-                      <th className="text-left p-2 border-b">Name</th>
-                      <th className="text-left p-2 border-b">PRN</th>
-                      <th className="text-left p-2 border-b">Semester</th>
-                      <th className="text-left p-2 border-b">Login ID</th>
-                      <th className="text-left p-2 border-b">System Email</th>
-                      <th className="text-left p-2 border-b">Password</th>
-                      <th className="text-left p-2 border-b">Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.manualCredentialEntries.map((entry, idx) => (
-                      <tr
-                        key={`${entry.prn || idx}-${idx}`}
-                        className="border-b"
-                      >
-                        <td className="p-2">{entry.name || "-"}</td>
-                        <td className="p-2">{entry.prn || "-"}</td>
-                        <td className="p-2">{entry.semester || "-"}</td>
-                        <td className="p-2">{entry.loginId || "-"}</td>
-                        <td className="p-2">{entry.systemEmail || "-"}</td>
-                        <td className="p-2">{entry.password || "-"}</td>
-                        <td className="p-2 text-amber-800">
-                          {entry.reason || "-"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <TableWrap className="shadow-none">
+                  <Table className="min-w-[980px]">
+                    <THead>
+                      <TR className="hover:bg-transparent">
+                        <TH>Name</TH>
+                        <TH>PRN</TH>
+                        <TH>Semester</TH>
+                        <TH>Login ID</TH>
+                        <TH>System Email</TH>
+                        <TH>Password</TH>
+                        <TH>Reason</TH>
+                      </TR>
+                    </THead>
+                    <TBody>
+                      {summary.manualCredentialEntries.map((entry, idx) => (
+                        <TR key={`${entry.prn || idx}-${idx}`}>
+                          <TD>{entry.name || "-"}</TD>
+                          <TD>{entry.prn || "-"}</TD>
+                          <TD>{entry.semester || "-"}</TD>
+                          <TD>{entry.loginId || "-"}</TD>
+                          <TD>{entry.systemEmail || "-"}</TD>
+                          <TD>{entry.password || "-"}</TD>
+                          <TD className="text-amber-800">
+                            {entry.reason || "-"}
+                          </TD>
+                        </TR>
+                      ))}
+                    </TBody>
+                  </Table>
+                </TableWrap>
               </div>
             )}
 
             {summary.skippedExistingEntries?.length > 0 && (
-              <div className="mt-6 overflow-x-auto">
-                <h3 className="text-md font-semibold text-slate-700 mb-2">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-ink-soft">
                   Already Enrolled (Skipped)
                 </h3>
-                <table className="min-w-[760px] w-full text-sm border border-slate-200">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="text-left p-2 border-b">PRN</th>
-                      <th className="text-left p-2 border-b">Name</th>
-                      <th className="text-left p-2 border-b">Existing Email</th>
-                      <th className="text-left p-2 border-b">Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.skippedExistingEntries.map((entry, idx) => (
-                      <tr
-                        key={`${entry.prn || idx}-${idx}`}
-                        className="border-b"
-                      >
-                        <td className="p-2">{entry.prn || "-"}</td>
-                        <td className="p-2">{entry.name || "-"}</td>
-                        <td className="p-2">{entry.existingEmail || "-"}</td>
-                        <td className="p-2">{entry.reason || "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <TableWrap className="shadow-none">
+                  <Table className="min-w-[760px]">
+                    <THead>
+                      <TR className="hover:bg-transparent">
+                        <TH>PRN</TH>
+                        <TH>Name</TH>
+                        <TH>Existing Email</TH>
+                        <TH>Reason</TH>
+                      </TR>
+                    </THead>
+                    <TBody>
+                      {summary.skippedExistingEntries.map((entry, idx) => (
+                        <TR key={`${entry.prn || idx}-${idx}`}>
+                          <TD>{entry.prn || "-"}</TD>
+                          <TD>{entry.name || "-"}</TD>
+                          <TD>{entry.existingEmail || "-"}</TD>
+                          <TD>{entry.reason || "-"}</TD>
+                        </TR>
+                      ))}
+                    </TBody>
+                  </Table>
+                </TableWrap>
               </div>
             )}
 
             {summary.updatedEntries?.length > 0 && (
-              <div className="mt-6 overflow-x-auto">
-                <h3 className="text-md font-semibold text-slate-800 mb-2">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-ink">
                   Existing Students Updated
                 </h3>
-                <table className="min-w-[760px] w-full text-sm border border-slate-200">
-                  <thead className="bg-indigo-50">
-                    <tr>
-                      <th className="text-left p-2 border-b">PRN</th>
-                      <th className="text-left p-2 border-b">Name</th>
-                      <th className="text-left p-2 border-b">Existing UID</th>
-                      <th className="text-left p-2 border-b">Existing Email</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.updatedEntries.map((entry, idx) => (
-                      <tr
-                        key={`${entry.prn || idx}-${idx}`}
-                        className="border-b"
-                      >
-                        <td className="p-2">{entry.prn || "-"}</td>
-                        <td className="p-2">{entry.name || "-"}</td>
-                        <td className="p-2">{entry.existingUid || "-"}</td>
-                        <td className="p-2">{entry.existingEmail || "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <TableWrap className="shadow-none">
+                  <Table className="min-w-[760px]">
+                    <THead>
+                      <TR className="hover:bg-transparent">
+                        <TH>PRN</TH>
+                        <TH>Name</TH>
+                        <TH>Existing UID</TH>
+                        <TH>Existing Email</TH>
+                      </TR>
+                    </THead>
+                    <TBody>
+                      {summary.updatedEntries.map((entry, idx) => (
+                        <TR key={`${entry.prn || idx}-${idx}`}>
+                          <TD>{entry.prn || "-"}</TD>
+                          <TD>{entry.name || "-"}</TD>
+                          <TD>{entry.existingUid || "-"}</TD>
+                          <TD>{entry.existingEmail || "-"}</TD>
+                        </TR>
+                      ))}
+                    </TBody>
+                  </Table>
+                </TableWrap>
               </div>
             )}
-          </div>
-        )}
-      </div>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }

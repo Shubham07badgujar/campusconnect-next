@@ -5,6 +5,21 @@ import { FiArrowLeft, FiRefreshCw } from "react-icons/fi";
 import { collection, getDocs } from "firebase/firestore";
 import { auth, firestore } from "@/lib/client/firebase";
 import { BRANCHES, YEARS, SEMESTERS } from "@/lib/client/branchYearSubjects";
+import Button from "@/components/ui/Button";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import StatCard from "@/components/ui/StatCard";
+import PageHeader from "@/components/ui/PageHeader";
+import { Field, Input, Select } from "@/components/ui/Field";
+import { EmptyState } from "@/components/ui/States";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
 
 const API_URL = String("")
   .trim()
@@ -167,59 +182,51 @@ export default function BulkAcademicUpdate() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] px-4 sm:px-6 py-6 sm:py-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <button
-          onClick={() => router.push("/admin-dashboard")}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:px-4 sm:py-2 sm:text-sm"
-        >
-          <FiArrowLeft className="h-4 w-4" /> Back to Dashboard
-        </button>
+    <div className="space-y-6">
+      <PageHeader
+        title="Bulk Academic Update"
+        description="Update existing students in bulk by selecting records from the list. Apply branch, year, and semester in one action instead of editing each student individually."
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => router.push("/admin-dashboard")}
+          >
+            <FiArrowLeft className="h-4 w-4" /> Back to Dashboard
+          </Button>
+        }
+      />
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
-            Bulk Academic Update
-          </h1>
-          <p className="text-slate-600">
-            Update existing students in bulk by selecting records from the list.
-            Apply branch, year, and semester in one action instead of editing
-            each student individually.
-          </p>
+      {error && (
+        <div className="rounded-card border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-danger">
+          {error}
         </div>
+      )}
+      {success && (
+        <div className="rounded-card border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {success}
+        </div>
+      )}
 
-        {error && (
-          <div className="bg-red-100 text-red-700 px-4 py-2 rounded">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="bg-green-100 text-green-700 px-4 py-2 rounded">
-            {success}
-          </div>
-        )}
-
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Search Students
-              </label>
-              <input
+      <Card>
+        <CardHeader
+          title="Select & Apply"
+          description="Filter the roster, choose the new academic values, then apply them to the selected students."
+        />
+        <CardBody className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-6 md:items-end">
+            <Field label="Search Students" className="md:col-span-2">
+              <Input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by PRN, name, email, or branch"
-                className="w-full border rounded-lg px-3 py-2"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                New Branch
-              </label>
-              <select
+            </Field>
+            <Field label="New Branch">
+              <Select
                 value={bulkBranch}
                 onChange={(e) => setBulkBranch(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
               >
                 <option value="">No Change</option>
                 {BRANCHES.map((branch) => (
@@ -227,16 +234,12 @@ export default function BulkAcademicUpdate() {
                     {branch}
                   </option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                New Year
-              </label>
-              <select
+              </Select>
+            </Field>
+            <Field label="New Year">
+              <Select
                 value={bulkYear}
                 onChange={(e) => setBulkYear(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
               >
                 <option value="">No Change</option>
                 {YEARS.map((year) => (
@@ -244,16 +247,12 @@ export default function BulkAcademicUpdate() {
                     {year} Year
                   </option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                New Semester
-              </label>
-              <select
+              </Select>
+            </Field>
+            <Field label="New Semester">
+              <Select
                 value={bulkSemester}
                 onChange={(e) => setBulkSemester(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
               >
                 <option value="">No Change</option>
                 {SEMESTERS.map((semester) => (
@@ -261,207 +260,227 @@ export default function BulkAcademicUpdate() {
                     Semester {semester}
                   </option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </Field>
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="secondary"
                 onClick={loadStudents}
+                loading={isLoadingStudents}
                 disabled={isLoadingStudents}
-                className="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center justify-center"
               >
-                <FiRefreshCw className="mr-2" />
+                <FiRefreshCw className="h-4 w-4" />
                 {isLoadingStudents ? "Loading..." : "Refresh"}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="success"
                 onClick={handleApply}
+                loading={isUpdating}
                 disabled={isUpdating || selectedPrns.size === 0}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg"
               >
                 {isUpdating ? "Updating..." : "Apply"}
-              </button>
+              </Button>
             </div>
           </div>
 
-          <div className="mt-4 p-3 rounded-lg bg-slate-50 text-sm">
-            Total Students: <strong>{students.length}</strong> | Filtered:{" "}
-            <strong>{filteredStudents.length}</strong> | Selected:{" "}
-            <strong>{selectedPrns.size}</strong>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <StatCard
+              label="Total Students"
+              value={students.length}
+              tone="info"
+            />
+            <StatCard
+              label="Filtered"
+              value={filteredStudents.length}
+              tone="neutral"
+            />
+            <StatCard
+              label="Selected"
+              value={selectedPrns.size}
+              tone="brand"
+            />
           </div>
-        </div>
+        </CardBody>
+      </Card>
 
-        {filteredStudents.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">
-              Existing Students
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-[980px] w-full text-sm border border-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="text-left p-2 border-b">
+      {filteredStudents.length > 0 && (
+        <Card>
+          <CardHeader title="Existing Students" />
+          <CardBody>
+            <TableWrap className="shadow-none">
+              <Table className="min-w-[980px]">
+                <THead>
+                  <TR className="hover:bg-transparent">
+                    <TH>
                       <input
                         type="checkbox"
                         checked={allFilteredSelected}
                         onChange={toggleSelectAllFiltered}
                       />
-                    </th>
-                    <th className="text-left p-2 border-b">PRN</th>
-                    <th className="text-left p-2 border-b">Name</th>
-                    <th className="text-left p-2 border-b">Email</th>
-                    <th className="text-left p-2 border-b">Branch</th>
-                    <th className="text-left p-2 border-b">Year</th>
-                    <th className="text-left p-2 border-b">Semester</th>
-                  </tr>
-                </thead>
-                <tbody>
+                    </TH>
+                    <TH>PRN</TH>
+                    <TH>Name</TH>
+                    <TH>Email</TH>
+                    <TH>Branch</TH>
+                    <TH>Year</TH>
+                    <TH>Semester</TH>
+                  </TR>
+                </THead>
+                <TBody>
                   {filteredStudents.map((student) => {
                     const prn = getStudentPrn(student);
                     return (
-                      <tr key={`${student.id}-${prn}`} className="border-b">
-                        <td className="p-2">
+                      <TR key={`${student.id}-${prn}`}>
+                        <TD>
                           <input
                             type="checkbox"
                             checked={selectedPrns.has(prn)}
                             onChange={() => toggleSelectPrn(prn)}
                           />
-                        </td>
-                        <td className="p-2">{prn || "-"}</td>
-                        <td className="p-2">{student.name || "-"}</td>
-                        <td className="p-2">{student.email || "-"}</td>
-                        <td className="p-2">
-                          {student.dept || student.department || "-"}
-                        </td>
-                        <td className="p-2">{student.year || "-"}</td>
-                        <td className="p-2">{student.semester || "-"}</td>
-                      </tr>
+                        </TD>
+                        <TD>{prn || "-"}</TD>
+                        <TD>{student.name || "-"}</TD>
+                        <TD>{student.email || "-"}</TD>
+                        <TD>{student.dept || student.department || "-"}</TD>
+                        <TD>{student.year || "-"}</TD>
+                        <TD>{student.semester || "-"}</TD>
+                      </TR>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+                </TBody>
+              </Table>
+            </TableWrap>
+          </CardBody>
+        </Card>
+      )}
 
-        {filteredStudents.length === 0 && !isLoadingStudents && (
-          <div className="bg-white rounded-xl shadow-md border border-cyan-100 p-5 sm:p-6">
-            <p className="text-slate-600">No matching students found.</p>
-          </div>
-        )}
+      {filteredStudents.length === 0 && !isLoadingStudents && (
+        <EmptyState
+          title="No matching students found."
+          description="Adjust your search or refresh the roster."
+        />
+      )}
 
-        {summary && (
-          <div className="bg-white rounded-xl shadow-md border border-cyan-100 p-5 sm:p-6">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-cyan-700">
-                Update Summary
-              </h2>
-              <button
+      {summary && (
+        <Card>
+          <CardHeader
+            title="Update Summary"
+            actions={
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setSummary(null)}
-                className="text-sm text-slate-600 hover:text-gray-900 flex items-center"
               >
-                <FiRefreshCw className="mr-1" /> Clear
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-4">
-              <div className="bg-blue-50 p-3 rounded">
-                Total: <strong>{summary.totalRows}</strong>
-              </div>
-              <div className="bg-green-50 p-3 rounded">
-                Updated: <strong>{summary.updatedCount}</strong>
-              </div>
-              <div className="bg-amber-50 p-3 rounded">
-                Not Found: <strong>{summary.notFoundCount}</strong>
-              </div>
-              <div className="bg-red-50 p-3 rounded">
-                Failed: <strong>{summary.failedCount}</strong>
-              </div>
+                <FiRefreshCw className="h-4 w-4" /> Clear
+              </Button>
+            }
+          />
+          <CardBody className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+              <StatCard label="Total" value={summary.totalRows} tone="info" />
+              <StatCard
+                label="Updated"
+                value={summary.updatedCount}
+                tone="success"
+              />
+              <StatCard
+                label="Not Found"
+                value={summary.notFoundCount}
+                tone="warning"
+              />
+              <StatCard
+                label="Failed"
+                value={summary.failedCount}
+                tone="danger"
+              />
             </div>
 
             {summary.updatedEntries?.length > 0 && (
-              <div className="mb-4 overflow-x-auto">
-                <h3 className="text-sm font-semibold text-green-700 mb-2">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-emerald-700">
                   Updated Students
                 </h3>
-                <table className="min-w-[760px] w-full text-sm border border-slate-200">
-                  <thead className="bg-green-50">
-                    <tr>
-                      <th className="text-left p-2 border-b">PRN</th>
-                      <th className="text-left p-2 border-b">Branch</th>
-                      <th className="text-left p-2 border-b">Year</th>
-                      <th className="text-left p-2 border-b">Semester</th>
-                      <th className="text-left p-2 border-b">
-                        Subjects Assigned
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.updatedEntries.map((entry, idx) => (
-                      <tr key={`${entry.prn}-${idx}`} className="border-b">
-                        <td className="p-2">{entry.prn}</td>
-                        <td className="p-2">{entry.branch}</td>
-                        <td className="p-2">{entry.year}</td>
-                        <td className="p-2">{entry.semester}</td>
-                        <td className="p-2">{entry.subjectCount}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <TableWrap className="shadow-none">
+                  <Table className="min-w-[760px]">
+                    <THead>
+                      <TR className="hover:bg-transparent">
+                        <TH>PRN</TH>
+                        <TH>Branch</TH>
+                        <TH>Year</TH>
+                        <TH>Semester</TH>
+                        <TH>Subjects Assigned</TH>
+                      </TR>
+                    </THead>
+                    <TBody>
+                      {summary.updatedEntries.map((entry, idx) => (
+                        <TR key={`${entry.prn}-${idx}`}>
+                          <TD>{entry.prn}</TD>
+                          <TD>{entry.branch}</TD>
+                          <TD>{entry.year}</TD>
+                          <TD>{entry.semester}</TD>
+                          <TD>{entry.subjectCount}</TD>
+                        </TR>
+                      ))}
+                    </TBody>
+                  </Table>
+                </TableWrap>
               </div>
             )}
 
             {summary.notFoundEntries?.length > 0 && (
-              <div className="mb-4 overflow-x-auto">
-                <h3 className="text-sm font-semibold text-amber-700 mb-2">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-amber-700">
                   Not Found
                 </h3>
-                <table className="min-w-[520px] w-full text-sm border border-slate-200">
-                  <thead className="bg-amber-50">
-                    <tr>
-                      <th className="text-left p-2 border-b">PRN</th>
-                      <th className="text-left p-2 border-b">Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.notFoundEntries.map((entry, idx) => (
-                      <tr key={`${entry.prn}-${idx}`} className="border-b">
-                        <td className="p-2">{entry.prn || "-"}</td>
-                        <td className="p-2">{entry.reason}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <TableWrap className="shadow-none">
+                  <Table className="min-w-[520px]">
+                    <THead>
+                      <TR className="hover:bg-transparent">
+                        <TH>PRN</TH>
+                        <TH>Reason</TH>
+                      </TR>
+                    </THead>
+                    <TBody>
+                      {summary.notFoundEntries.map((entry, idx) => (
+                        <TR key={`${entry.prn}-${idx}`}>
+                          <TD>{entry.prn || "-"}</TD>
+                          <TD>{entry.reason}</TD>
+                        </TR>
+                      ))}
+                    </TBody>
+                  </Table>
+                </TableWrap>
               </div>
             )}
 
             {summary.failedEntries?.length > 0 && (
-              <div className="overflow-x-auto">
-                <h3 className="text-sm font-semibold text-red-700 mb-2">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-danger">
                   Failed Updates
                 </h3>
-                <table className="min-w-[520px] w-full text-sm border border-slate-200">
-                  <thead className="bg-red-50">
-                    <tr>
-                      <th className="text-left p-2 border-b">PRN</th>
-                      <th className="text-left p-2 border-b">Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.failedEntries.map((entry, idx) => (
-                      <tr
-                        key={`${entry.prn || idx}-${idx}`}
-                        className="border-b"
-                      >
-                        <td className="p-2">{entry.prn || "-"}</td>
-                        <td className="p-2">{entry.reason}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <TableWrap className="shadow-none">
+                  <Table className="min-w-[520px]">
+                    <THead>
+                      <TR className="hover:bg-transparent">
+                        <TH>PRN</TH>
+                        <TH>Reason</TH>
+                      </TR>
+                    </THead>
+                    <TBody>
+                      {summary.failedEntries.map((entry, idx) => (
+                        <TR key={`${entry.prn || idx}-${idx}`}>
+                          <TD>{entry.prn || "-"}</TD>
+                          <TD>{entry.reason}</TD>
+                        </TR>
+                      ))}
+                    </TBody>
+                  </Table>
+                </TableWrap>
               </div>
             )}
-          </div>
-        )}
-      </div>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }

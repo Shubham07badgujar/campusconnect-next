@@ -9,6 +9,19 @@ import {
   SEMESTERS,
   DEFAULT_SUBJECT_SETS,
 } from "@/lib/client/branchYearSubjects";
+import Button from "@/components/ui/Button";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import PageHeader from "@/components/ui/PageHeader";
+import { Field, Select, Textarea } from "@/components/ui/Field";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
 
 const API_URL = "";
 
@@ -116,45 +129,45 @@ export default function SubjectSetManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] px-4 sm:px-6 py-6 sm:py-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <button
-          onClick={() => router.push("/admin-dashboard")}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:px-4 sm:py-2 sm:text-sm"
-        >
-          <FiArrowLeft className="h-4 w-4" /> Back to Dashboard
-        </button>
+    <div className="space-y-6">
+      <PageHeader
+        title={
+          <span className="flex items-center gap-2">
+            <FiBookOpen className="h-5 w-5" /> Subject Set Management
+          </span>
+        }
+        description="Manage centralized subjects for each branch and year. These sets are used for both student onboarding and teacher course assignment consistency."
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => router.push("/admin-dashboard")}
+          >
+            <FiArrowLeft className="h-4 w-4" /> Back to Dashboard
+          </Button>
+        }
+      />
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 flex items-center">
-            <FiBookOpen className="mr-3" /> Subject Set Management
-          </h1>
-          <p className="text-slate-600">
-            Manage centralized subjects for each branch and year. These sets are
-            used for both student onboarding and teacher course assignment
-            consistency.
-          </p>
+      {error && (
+        <div className="rounded-card border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-danger">
+          {error}
         </div>
+      )}
+      {message && (
+        <div className="rounded-card border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {message}
+        </div>
+      )}
 
-        {error && (
-          <div className="bg-red-100 text-red-700 px-4 py-2 rounded">
-            {error}
-          </div>
-        )}
-        {message && (
-          <div className="bg-green-100 text-green-700 px-4 py-2 rounded">
-            {message}
-          </div>
-        )}
-
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Branch
-              </label>
-              <select
-                className="w-full border rounded-lg px-3 py-2"
+      <Card>
+        <CardHeader
+          title="Edit Subject Set"
+          description="Pick a branch, year, and semester, then edit the subjects (one per line) and save."
+        />
+        <CardBody className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <Field label="Branch">
+              <Select
                 value={selectedBranch}
                 onChange={(e) => setSelectedBranch(e.target.value)}
               >
@@ -163,14 +176,10 @@ export default function SubjectSetManagement() {
                     {branch}
                   </option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Year
-              </label>
-              <select
-                className="w-full border rounded-lg px-3 py-2"
+              </Select>
+            </Field>
+            <Field label="Year">
+              <Select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
               >
@@ -179,14 +188,10 @@ export default function SubjectSetManagement() {
                     {year} Year
                   </option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Semester
-              </label>
-              <select
-                className="w-full border rounded-lg px-3 py-2"
+              </Select>
+            </Field>
+            <Field label="Semester">
+              <Select
                 value={selectedSemester}
                 onChange={(e) => setSelectedSemester(e.target.value)}
               >
@@ -195,83 +200,85 @@ export default function SubjectSetManagement() {
                     Semester {semester}
                   </option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </Field>
             <div className="flex items-end gap-2">
-              <button
+              <Button
+                variant="secondary"
                 onClick={fetchSubjectSets}
+                loading={loading}
                 disabled={loading}
-                className="flex items-center bg-slate-100 hover:bg-gray-200 text-slate-700 px-4 py-2 rounded-lg"
               >
-                <FiRefreshCw className="mr-2" />{" "}
+                <FiRefreshCw className="h-4 w-4" />{" "}
                 {loading ? "Refreshing..." : "Refresh"}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
                 onClick={handleSave}
+                loading={saving}
                 disabled={saving}
-                className="flex items-center bg-[#2f87d9] hover:bg-[#1f6fb7] text-white px-4 py-2 rounded-lg"
               >
-                <FiSave className="mr-2" /> {saving ? "Saving..." : "Save Set"}
-              </button>
+                <FiSave className="h-4 w-4" /> {saving ? "Saving..." : "Save Set"}
+              </Button>
             </div>
           </div>
 
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Subjects for {selectedBranch} - {selectedYear} Year - Semester{" "}
-            {selectedSemester} (one per line)
-          </label>
-          <textarea
-            className="w-full min-h-[220px] border rounded-lg px-3 py-2"
-            value={subjectText}
-            onChange={(e) => setSubjectText(e.target.value)}
-            placeholder="Enter one subject per line"
-          />
-        </div>
+          <Field
+            label={`Subjects for ${selectedBranch} - ${selectedYear} Year - Semester ${selectedSemester} (one per line)`}
+          >
+            <Textarea
+              className="min-h-[220px]"
+              value={subjectText}
+              onChange={(e) => setSubjectText(e.target.value)}
+              placeholder="Enter one subject per line"
+            />
+          </Field>
+        </CardBody>
+      </Card>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">
-            Current Subject Matrix
-          </h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-[1200px] w-full text-sm border border-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left p-3 border-b">Branch</th>
-                  <th className="text-left p-3 border-b">1st - Sem 1</th>
-                  <th className="text-left p-3 border-b">1st - Sem 2</th>
-                  <th className="text-left p-3 border-b">2nd - Sem 1</th>
-                  <th className="text-left p-3 border-b">2nd - Sem 2</th>
-                  <th className="text-left p-3 border-b">3rd - Sem 1</th>
-                  <th className="text-left p-3 border-b">3rd - Sem 2</th>
-                  <th className="text-left p-3 border-b">4th - Sem 1</th>
-                  <th className="text-left p-3 border-b">4th - Sem 2</th>
-                </tr>
-              </thead>
-              <tbody>
+      <Card>
+        <CardHeader title="Current Subject Matrix" />
+        <CardBody>
+          <TableWrap className="shadow-none">
+            <Table className="min-w-[1200px]">
+              <THead>
+                <TR className="hover:bg-transparent">
+                  <TH>Branch</TH>
+                  <TH>1st - Sem 1</TH>
+                  <TH>1st - Sem 2</TH>
+                  <TH>2nd - Sem 1</TH>
+                  <TH>2nd - Sem 2</TH>
+                  <TH>3rd - Sem 1</TH>
+                  <TH>3rd - Sem 2</TH>
+                  <TH>4th - Sem 1</TH>
+                  <TH>4th - Sem 2</TH>
+                </TR>
+              </THead>
+              <TBody>
                 {BRANCHES.map((branch) => (
-                  <tr key={branch} className="align-top">
-                    <td className="p-3 border-b font-medium">{branch}</td>
+                  <TR key={branch} className="align-top">
+                    <TD className="font-medium">{branch}</TD>
                     {YEARS.map((year) => (
                       <React.Fragment key={`${branch}-${year}`}>
                         {SEMESTERS.map((semester) => (
-                          <td
+                          <TD
                             key={`${branch}-${year}-${semester}`}
-                            className="p-3 border-b text-xs text-slate-600"
+                            className="text-xs text-ink-soft"
                           >
                             {(
                               subjectSets?.[branch]?.[year]?.[semester] || []
                             ).join(", ") || "-"}
-                          </td>
+                          </TD>
                         ))}
                       </React.Fragment>
                     ))}
-                  </tr>
+                  </TR>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+              </TBody>
+            </Table>
+          </TableWrap>
+        </CardBody>
+      </Card>
     </div>
   );
 }

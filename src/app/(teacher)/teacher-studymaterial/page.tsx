@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FiArrowLeft } from "react-icons/fi";
+import { Upload, Trash2, Download, FolderOpen } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import { Field, Input, Select, Textarea } from "@/components/ui/Field";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { PageLoader, EmptyState } from "@/components/ui/States";
 import {
   collection,
   getDocs,
@@ -597,109 +603,96 @@ const TeacherStudyMaterial = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#eef2f6] px-4 py-6 sm:px-6">
-        <div className="mx-auto max-w-6xl text-center">
-          <div className="flex h-64 items-center justify-center">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#2f87d9] border-t-transparent"></div>
-          </div>
-          <p className="text-sm font-medium text-slate-600">Loading...</p>
-        </div>
+      <div className="space-y-6">
+        <PageHeader
+          title="Study Materials"
+          description="Upload and manage study materials for your students."
+        />
+        <PageLoader />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] px-3 py-5 sm:px-5 sm:py-7 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        <button
-          onClick={() => router.push("/teacher-dashboard")}
-          className="mb-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:px-4 sm:py-2 sm:text-sm"
-        >
-          <FiArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </button>
+    <div className="space-y-6">
+      <PageHeader
+        title="Study Materials"
+        description="Upload and manage study materials for your students."
+        actions={
+          teacherDept ? (
+            <Badge tone="brand">Department: {teacherDept}</Badge>
+          ) : undefined
+        }
+      />
 
-        <h1 className="mb-4 text-2xl font-semibold text-slate-800 sm:text-3xl">
-          Manage Study Materials
-        </h1>
-
-        <div className="mb-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <p className="text-sm text-slate-700 sm:text-base">
-            <span className="font-semibold">Your Department:</span>{" "}
-            {teacherDept}
-          </p>
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3">
-          <div className="col-span-1">
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Branch/Department:
-            </label>
-            <select
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700"
-              value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
-            >
-              {branches.map((branch, index) => (
-                <option key={index} value={branch}>
-                  {branch} {branch === teacherDept ? "(Your Department)" : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="col-span-1">
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Subject:
-            </label>
-            <select
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700"
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              disabled={subjects.length === 0}
-            >
-              {subjects.length === 0 ? (
-                <option value="">
-                  No assigned subjects available for this branch
-                </option>
-              ) : (
-                subjects.map((subject, index) => (
-                  <option key={index} value={subject}>
-                    {subject}
+      {/* Filters */}
+      <Card>
+        <CardHeader
+          title="Browse materials"
+          description="Pick a branch and subject to view its uploaded materials."
+        />
+        <CardBody>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Field label="Branch / Department" htmlFor="branch-select">
+              <Select
+                id="branch-select"
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+              >
+                {branches.map((branch, index) => (
+                  <option key={index} value={branch}>
+                    {branch} {branch === teacherDept ? "(Your Department)" : ""}
                   </option>
-                ))
-              )}
-            </select>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="Subject" htmlFor="subject-select">
+              <Select
+                id="subject-select"
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                disabled={subjects.length === 0}
+              >
+                {subjects.length === 0 ? (
+                  <option value="">
+                    No assigned subjects available for this branch
+                  </option>
+                ) : (
+                  subjects.map((subject, index) => (
+                    <option key={index} value={subject}>
+                      {subject}
+                    </option>
+                  ))
+                )}
+              </Select>
+            </Field>
           </div>
-        </div>
+        </CardBody>
+      </Card>
 
-        {/* Upload form */}
-        <div className="mb-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
-          <h2 className="mb-4 text-lg font-semibold text-slate-800 sm:text-xl">
-            Upload New Material
-          </h2>
-
-          <form onSubmit={handleUpload}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Title*
-                </label>
-                <input
+      {/* Upload form */}
+      <Card>
+        <CardHeader
+          title="Upload new material"
+          description="Share notes, assignments, references and more with your students."
+        />
+        <CardBody>
+          <form onSubmit={handleUpload} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Title" required htmlFor="title">
+                <Input
+                  id="title"
                   type="text"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
                 />
-              </div>
+              </Field>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Category
-                </label>
-                <select
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800"
+              <Field label="Category" htmlFor="category">
+                <Select
+                  id="category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                 >
@@ -708,125 +701,115 @@ const TeacherStudyMaterial = () => {
                   <option value="reference">Reference Material</option>
                   <option value="syllabus">Syllabus</option>
                   <option value="other">Other</option>
-                </select>
-              </div>
+                </Select>
+              </Field>
 
-              <div className="md:col-span-2">
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Description
-                </label>
-                <textarea
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800"
+              <Field
+                label="Description"
+                htmlFor="description"
+                className="md:col-span-2"
+              >
+                <Textarea
+                  id="description"
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                ></textarea>
-              </div>
+                />
+              </Field>
 
-              <div className="md:col-span-2">
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  File*
-                </label>
+              <Field
+                label="File"
+                required
+                className="md:col-span-2"
+                hint="Max file size: 10MB. Supported formats: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, JPG, PNG, ZIP, RAR"
+              >
                 <input
                   id="file-upload"
                   type="file"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800"
+                  className="block w-full cursor-pointer rounded-lg border border-line bg-white text-sm text-ink transition file:mr-3 file:cursor-pointer file:border-0 file:bg-slate-50 file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-ink-soft hover:file:bg-slate-100 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
                   onChange={handleFileChange}
                   required
                 />
-                <p className="mt-1 text-xs text-slate-500">
-                  Max file size: 10MB. Supported formats: PDF, DOC, DOCX, PPT,
-                  PPTX, XLS, XLSX, TXT, JPG, PNG, ZIP, RAR
-                </p>
-              </div>
+              </Field>
             </div>
 
             {uploading && (
-              <div className="mt-4">
-                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+              <div>
+                <div className="mb-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
                   <div
-                    className="bg-blue-600 h-2.5 rounded-full"
+                    className="h-2.5 rounded-full bg-brand-600 transition-all"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-ink-soft">
                   Upload progress: {Math.round(uploadProgress)}%
                 </p>
               </div>
             )}
 
-            <div className="mt-4">
-              <button
-                type="submit"
-                className="rounded-xl bg-[#2f87d9] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1f6fb7] disabled:opacity-50"
-                disabled={uploading}
-              >
+            <div>
+              <Button type="submit" loading={uploading}>
+                <Upload className="h-4 w-4" />
                 {uploading ? "Uploading..." : "Upload Material"}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </CardBody>
+      </Card>
 
-        {/* Materials list */}
-        <div>
-          <h2 className="mb-4 text-xl font-semibold text-slate-800 sm:text-2xl">
-            Your Materials
-          </h2>
+      {/* Materials list */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold text-ink">Your Materials</h2>
 
-          {materials.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
-              <p className="text-slate-600">
-                No materials found for this subject. Upload your first material!
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {materials.map((material) => (
-                <div
-                  key={material.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition"
-                >
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">
-                        {getCategoryIcon(material.category)}
-                      </span>
-                      <span className="text-lg">
+        {materials.length === 0 ? (
+          <EmptyState
+            icon={FolderOpen}
+            title="No materials yet"
+            description="No materials found for this subject. Upload your first material to get started!"
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {materials.map((material) => (
+              <Card key={material.id} className="flex flex-col">
+                <CardBody className="flex flex-1 flex-col">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xl">
+                      <span>{getCategoryIcon(material.category)}</span>
+                      <span className="text-base">
                         {getFileTypeIcon(material.fileType)}
                       </span>
                     </div>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-xs text-ink-faint">
                       {new Date(material.createdAt).toLocaleDateString()}
                     </span>
                   </div>
 
-                  <h3 className="mb-2 text-lg font-semibold text-slate-800">
+                  <h3 className="mb-2 text-base font-semibold text-ink">
                     {material.title}
                   </h3>
 
                   {material.description && (
-                    <p className="mb-3 text-sm text-slate-600">
+                    <p className="mb-3 text-sm text-ink-soft">
                       {material.description}
                     </p>
                   )}
 
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                      {material.subject}
-                    </span>
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {material.category && (
+                      <Badge tone="brand">{material.category}</Badge>
+                    )}
+                    <Badge tone="info">{material.subject}</Badge>
                     {material.fileSize && (
-                      <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-                        {material.fileSize}
-                      </span>
+                      <Badge tone="neutral">{material.fileSize}</Badge>
                     )}
                   </div>
 
-                  <div className="flex justify-between items-center">
+                  <div className="mt-auto flex items-center justify-between">
                     <a
                       href={material.fileURL}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="rounded-lg bg-[#2f87d9] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#1f6fb7]"
+                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-3 text-xs font-medium text-white transition-colors hover:bg-brand-700 active:bg-brand-800"
                       onClick={(e) => {
                         if (material.fileURL.includes("example.com")) {
                           e.preventDefault();
@@ -836,25 +819,28 @@ const TeacherStudyMaterial = () => {
                         }
                       }}
                     >
+                      <Download className="h-3.5 w-3.5" />
                       Download
                     </a>
 
                     {material.uploadedBy === user?.uid && (
-                      <button
+                      <Button
+                        variant="danger"
+                        size="sm"
                         onClick={() =>
                           handleDelete(material.id, material.cloudinaryPublicId)
                         }
-                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700"
                       >
+                        <Trash2 className="h-3.5 w-3.5" />
                         Delete
-                      </button>
+                      </Button>
                     )}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                </CardBody>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

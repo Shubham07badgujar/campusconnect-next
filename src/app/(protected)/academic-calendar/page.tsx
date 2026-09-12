@@ -1057,11 +1057,11 @@ function AcademicCalendar() {
   }, [academicEvents]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 pt-10 pb-10">
+    <div className="-mx-4 -my-6 min-h-full bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 px-4 pb-10 pt-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       {/* Back Button */}
       <button
         onClick={() => router.push("/calendars")}
-        className="flex items-center mx-4 sm:mx-8 my-4 text-indigo-600 hover:text-indigo-800 transition-colors"
+        className="mb-4 flex items-center text-indigo-600 transition-colors hover:text-indigo-800"
       >
         <FiArrowLeft className="mr-2" />
         Back to Calendars

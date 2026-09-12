@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { Clock, MapPin, Radius } from "lucide-react";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
 
 const haversineDistanceMeters = (pointA: any, pointB: any) => {
   const lat1 = Number(pointA?.lat);
@@ -66,68 +70,83 @@ export default function AttendanceSessionCard({
 
   if (!session) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
-        Join an active session from the list to continue with attendance
-        verification.
-      </div>
+      <Card>
+        <CardBody className="text-sm text-ink-soft">
+          Join an active session from the list to continue with attendance
+          verification.
+        </CardBody>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-      <h3 className="text-lg font-semibold text-emerald-800">
-        Active Attendance Session
-      </h3>
-      <p className="mt-1 text-sm text-emerald-700">
-        {session.subjectName} | {session.date}
-      </p>
-      <p className="mt-2 text-sm font-semibold text-emerald-800">
-        Time remaining: {timerText}
-      </p>
-
-      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div className="rounded-xl bg-white p-3 text-sm text-slate-700">
-          <p className="font-medium">Distance from classroom</p>
-          <p className="mt-1">
-            {Number.isFinite(distance)
-              ? `${distance.toFixed(1)} meters`
-              : "Location unavailable"}
-          </p>
+    <Card className="border-emerald-200">
+      <CardHeader
+        title={
+          <span className="flex items-center gap-2 text-emerald-800">
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+              <Clock className="h-3.5 w-3.5" />
+            </span>
+            Active Attendance Session
+          </span>
+        }
+        description={
+          <span className="text-emerald-700">
+            {session.subjectName} | {session.date}
+          </span>
+        }
+        actions={
+          <Badge tone="success">
+            <Clock className="h-3.5 w-3.5" /> {timerText}
+          </Badge>
+        }
+        className="border-emerald-100 bg-emerald-50/60"
+      />
+      <CardBody className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="rounded-xl border border-line bg-slate-50/70 p-3 text-sm text-ink-soft">
+            <p className="flex items-center gap-1.5 font-medium text-ink">
+              <MapPin className="h-3.5 w-3.5 text-ink-faint" /> Distance from
+              classroom
+            </p>
+            <p className="mt-1">
+              {Number.isFinite(distance)
+                ? `${distance.toFixed(1)} meters`
+                : "Location unavailable"}
+            </p>
+          </div>
+          <div className="rounded-xl border border-line bg-slate-50/70 p-3 text-sm text-ink-soft">
+            <p className="flex items-center gap-1.5 font-medium text-ink">
+              <Radius className="h-3.5 w-3.5 text-ink-faint" /> Allowed radius
+            </p>
+            <p className="mt-1">{allowedDistance} meters</p>
+          </div>
         </div>
-        <div className="rounded-xl bg-white p-3 text-sm text-slate-700">
-          <p className="font-medium">Allowed radius</p>
-          <p className="mt-1">{allowedDistance} meters</p>
-        </div>
-      </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled={!isVerificationReady || marking}
-          onClick={onMark}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
-          {marking ? "Marking..." : "Mark Attendance"}
-        </button>
-        {onLeave ? (
-          <button
-            type="button"
-            onClick={onLeave}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="success"
+            disabled={!isVerificationReady || marking}
+            onClick={onMark}
           >
-            Leave Session
-          </button>
-        ) : null}
-      </div>
+            {marking ? "Marking..." : "Mark Attendance"}
+          </Button>
+          {onLeave ? (
+            <Button variant="secondary" onClick={onLeave}>
+              Leave Session
+            </Button>
+          ) : null}
+        </div>
 
-      <p className="mt-2 text-xs text-slate-500">
-        Distance is shown for reference and may vary by network/GPS accuracy.
-      </p>
-      {!isVerificationReady ? (
-        <p className="mt-2 text-xs text-amber-700">
-          Complete {verificationLabel} verification before marking attendance.
+        <p className="text-xs text-ink-faint">
+          Distance is shown for reference and may vary by network/GPS accuracy.
         </p>
-      ) : null}
-    </div>
+        {!isVerificationReady ? (
+          <p className="text-xs text-amber-700">
+            Complete {verificationLabel} verification before marking attendance.
+          </p>
+        ) : null}
+      </CardBody>
+    </Card>
   );
 }

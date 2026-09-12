@@ -1,17 +1,25 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import {
-  FiArrowLeft,
-  FiCalendar,
-  FiDownload,
-  FiFileText,
-} from "react-icons/fi";
+import { FiCalendar, FiDownload, FiFileText, FiLayers } from "react-icons/fi";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/client/firebase";
 import { useRouter } from "next/navigation";
+import PageHeader from "@/components/ui/PageHeader";
+import StatCard from "@/components/ui/StatCard";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import {
+  TableWrap,
+  Table,
+  THead,
+  TH,
+  TBody,
+  TR,
+  TD,
+} from "@/components/ui/Table";
+import { PageLoader, EmptyState, ErrorState } from "@/components/ui/States";
 
 const YEARS = ["1st", "2nd", "3rd", "4th"];
 
@@ -271,104 +279,59 @@ const ExamTimetable = () => {
   }, [filteredExams]);
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] px-3 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-7xl">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="mb-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:px-4 sm:py-2 sm:text-sm"
-        >
-          <FiArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </button>
+    <div className="animate-fade-up space-y-6">
+      <PageHeader
+        title="Exam Timetable"
+        description="Complete year-wise schedule with live updates."
+      />
 
-        <motion.div
-          initial={{ opacity: 0, y: -14 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-8"
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2f87d9]">
-                <FiCalendar className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-800 sm:text-3xl">
-                  Exam Timetable
-                </h1>
-                <p className="mt-1 text-sm text-slate-600">
-                  Complete year-wise schedule with active updates
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:min-w-[220px]">
-              <div className="rounded-xl bg-[#f4f8ff] px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Exams
-                </p>
-                <p className="text-lg font-semibold text-slate-800">
-                  {filteredExams.length}
-                </p>
-              </div>
-              <div className="rounded-xl bg-[#f7fbf1] px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Exam Days
-                </p>
-                <p className="text-lg font-semibold text-slate-800">
-                  {totalExamDays}
-                </p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard label="Exams" value={filteredExams.length} icon={FiCalendar} />
+        <StatCard
+          label="Exam Days"
+          value={totalExamDays}
+          icon={FiLayers}
+          tone="success"
+        />
+        <StatCard
+          label="Selected Year"
+          value={effectiveYear || "All"}
+          icon={FiFileText}
+          tone="info"
+        />
+      </div>
 
-        <div className="mb-5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Filter Timetable
-          </p>
-
-          <div className="mb-3 flex flex-wrap gap-2">
+      <Card>
+        <CardHeader
+          title="Filter timetable"
+          description="Select any year to view its exam list and official PDF."
+        />
+        <CardBody>
+          <div className="flex flex-wrap gap-2">
             {YEARS.map((year) => {
               const active =
                 normalizeYearToken(effectiveYear) === normalizeYearToken(year);
 
               return (
-                <button
+                <Button
                   key={year}
-                  type="button"
+                  variant={active ? "primary" : "secondary"}
+                  size="sm"
                   onClick={() => setSelectedYear(year)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                    active
-                      ? "bg-[#2f87d9] text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
                 >
                   {year} Year
-                </button>
+                </Button>
               );
             })}
           </div>
+        </CardBody>
+      </Card>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            Timetable is year-wise. Select any year to view its exam list and
-            official PDF.
-          </div>
-        </div>
+      {error ? <ErrorState title="Unable to load" description={error} /> : null}
 
-        {error ? (
-          <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            {error}
-          </div>
-        ) : null}
-
-        <div className="mb-5 rounded-2xl border border-sky-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 flex items-center gap-2">
-            <FiFileText className="h-4 w-4 text-[#2f87d9]" />
-            <p className="text-sm font-semibold text-slate-800">
-              Official Timetable PDF
-            </p>
-          </div>
-
+      <Card>
+        <CardHeader title="Official Timetable PDF" />
+        <CardBody>
           {visiblePdfFiles.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {visiblePdfFiles.map((file) => (
@@ -377,84 +340,66 @@ const ExamTimetable = () => {
                   href={file.fileURL}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 rounded-lg bg-[#2f87d9] px-3 py-1.5 text-xs font-medium text-white"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-brand-700"
                 >
                   {(file.year || effectiveYear || "Year").trim()} PDF
-                  <FiDownload className="h-3.5 w-3.5" />
+                  <FiDownload className="h-4 w-4" />
                 </a>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-soft">
               No official timetable PDF uploaded for this year.
             </p>
           )}
-        </div>
+        </CardBody>
+      </Card>
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-slate-800">
-              Exam List ({effectiveYear || "All Years"})
-            </h2>
-          </div>
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-ink">
+          Exam List ({effectiveYear || "All Years"})
+        </h2>
 
-          {loading ? (
-            <div className="py-12 text-center text-slate-500">
-              Loading timetable...
-            </div>
-          ) : filteredExams.length === 0 ? (
-            <div className="py-12 text-center text-slate-500">
-              No exams available for selected filters.
-            </div>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <table className="w-full min-w-[980px] text-left text-sm">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-700">
-                    <th className="px-3 py-2">Date</th>
-                    <th className="px-3 py-2">Day</th>
-                    <th className="px-3 py-2">Time</th>
-                    <th className="px-3 py-2">Course Code</th>
-                    <th className="px-3 py-2">Course Name</th>
-                    <th className="px-3 py-2">Branch</th>
-                    <th className="px-3 py-2">Duration</th>
-                    <th className="px-3 py-2">Year</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredExams.map((exam) => (
-                    <tr key={exam.id} className="border-t border-slate-200">
-                      <td className="px-3 py-2 text-slate-700">
-                        {formatExamDate(exam.date)}
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {resolveExamDay(exam)}
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {exam.time || "Time TBA"}
-                      </td>
-                      <td className="px-3 py-2 font-medium text-slate-700">
-                        {exam.courseCode || "-"}
-                      </td>
-                      <td className="px-3 py-2 font-medium text-slate-800">
-                        {exam.courseName || "Course"}
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {exam.branch || "-"}
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {exam.duration || "-"}
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {exam.year || "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        {loading ? (
+          <PageLoader label="Loading timetable..." />
+        ) : filteredExams.length === 0 ? (
+          <EmptyState
+            icon={FiCalendar}
+            title="No exams found"
+            description="No exams are available for the selected filters."
+          />
+        ) : (
+          <TableWrap>
+            <Table>
+              <THead>
+                <tr>
+                  <TH>Date</TH>
+                  <TH>Day</TH>
+                  <TH>Time</TH>
+                  <TH>Course Code</TH>
+                  <TH>Course Name</TH>
+                  <TH>Branch</TH>
+                  <TH>Duration</TH>
+                  <TH>Year</TH>
+                </tr>
+              </THead>
+              <TBody>
+                {filteredExams.map((exam) => (
+                  <TR key={exam.id}>
+                    <TD className="text-ink-soft">{formatExamDate(exam.date)}</TD>
+                    <TD className="text-ink-soft">{resolveExamDay(exam)}</TD>
+                    <TD className="text-ink-soft">{exam.time || "Time TBA"}</TD>
+                    <TD className="font-medium">{exam.courseCode || "-"}</TD>
+                    <TD className="font-medium">{exam.courseName || "Course"}</TD>
+                    <TD className="text-ink-soft">{exam.branch || "-"}</TD>
+                    <TD className="text-ink-soft">{exam.duration || "-"}</TD>
+                    <TD className="text-ink-soft">{exam.year || "-"}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </TableWrap>
+        )}
       </div>
     </div>
   );

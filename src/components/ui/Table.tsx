@@ -2,7 +2,12 @@
 
 // Table primitives with a consistent look; the wrapper guarantees horizontal
 // scrolling on small screens so pages never overflow the viewport.
-import type { HTMLAttributes, ReactNode } from "react";
+import type {
+  HTMLAttributes,
+  ReactNode,
+  TdHTMLAttributes,
+  ThHTMLAttributes,
+} from "react";
 
 export function TableWrap({
   children,
@@ -32,7 +37,10 @@ export function THead({ children }: { children: ReactNode }) {
   );
 }
 
-export function TH({ className = "", ...rest }: HTMLAttributes<HTMLTableCellElement>) {
+export function TH({
+  className = "",
+  ...rest
+}: ThHTMLAttributes<HTMLTableCellElement>) {
   return <th className={`px-4 py-3 ${className}`} {...rest} />;
 }
 
@@ -44,6 +52,9 @@ export function TR({ className = "", ...rest }: HTMLAttributes<HTMLTableRowEleme
   return <tr className={`transition-colors hover:bg-slate-50/70 ${className}`} {...rest} />;
 }
 
-export function TD({ className = "", ...rest }: HTMLAttributes<HTMLTableCellElement>) {
+export function TD({
+  className = "",
+  ...rest
+}: TdHTMLAttributes<HTMLTableCellElement>) {
   return <td className={`px-4 py-3 text-ink ${className}`} {...rest} />;
 }

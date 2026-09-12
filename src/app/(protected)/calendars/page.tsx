@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FiArrowLeft, FiCalendar, FiBook } from "react-icons/fi";
+import { FiCalendar, FiBook } from "react-icons/fi";
 import { FaCalendarAlt, FaGraduationCap } from "react-icons/fa";
 import { auth } from "@/lib/client/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
+import PageHeader from "@/components/ui/PageHeader";
+import Badge from "@/components/ui/Badge";
+import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 
 function Calendars() {
   const router = useRouter();
@@ -81,111 +83,64 @@ function Calendars() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] pt-10 pb-10">
-      {/* Back Button */}
-      <button
-        onClick={handleBack}
-        className="mx-4 my-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition hover:text-[#2f87d9] sm:mx-8 sm:px-4 sm:py-2 sm:text-sm"
-      >
-        <FiArrowLeft className="h-4 w-4" />
-        Back to Dashboard
-      </button>
+    <div className="space-y-6">
+      <PageHeader
+        title="Calendars"
+        description="Choose a calendar to view schedules and events."
+      />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <div className="w-20 h-20 bg-[#2f87d9] rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-            <FiCalendar className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-slate-800 mb-3">Calendars</h1>
-          <p className="text-slate-600 text-lg">
-            Choose a calendar to view schedules and events
-          </p>
-        </motion.div>
-
-        {/* Calendar Options */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {calendarOptions.map((option, index) => (
-            <motion.div
-              key={option.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+      <div className="grid gap-4 md:grid-cols-2">
+        {calendarOptions.map((option) => (
+          <Link
+            key={option.id}
+            href={option.path}
+            className="group rounded-card border border-line bg-surface p-6 shadow-card transition hover:-translate-y-0.5 hover:shadow-pop"
+          >
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${option.gradient} text-white shadow-sm`}
             >
-              <Link href={option.path}>
-                <motion.div
-                  whileHover={{ scale: 1.03, y: -5 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`bg-gradient-to-br ${option.bgGradient} rounded-2xl p-8 border-2 ${option.borderColor} shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer h-full`}
-                >
-                  {/* Icon */}
-                  <div
-                    className={`w-16 h-16 bg-gradient-to-br ${option.gradient} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}
-                  >
-                    <option.icon className="w-8 h-8 text-white" />
-                  </div>
-
-                  {/* Title */}
-                  <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                    {option.title}
-                  </h2>
-
-                  {/* Description */}
-                  <p className="text-gray-600 mb-4 leading-relaxed">
-                    {option.description}
-                  </p>
-
-                  {/* Permission Badge */}
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-sm px-3 py-1.5 rounded-full ${
-                        option.canEdit
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {option.canEdit ? "✏️ " : "👁️ "}
-                      {option.editLabel}
-                    </span>
-                    <span className="text-[#2f87d9] font-medium flex items-center gap-1">
-                      View →
-                    </span>
-                  </div>
-                </motion.div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Info Card */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="mt-10 bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80"
-        >
-          <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-            <FiBook className="text-[#2f87d9]" />
-            About Calendars
-          </h3>
-          <div className="text-slate-600 space-y-2 text-sm">
-            <p>
-              <strong>Events Calendar:</strong> Contains college events,
-              workshops, seminars, cultural activities, and important dates.
-              Teachers and admins can add and manage events.
+              <option.icon className="h-6 w-6" />
+            </div>
+            <h2 className="mt-4 text-lg font-semibold text-ink">
+              {option.title}
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+              {option.description}
             </p>
-            <p>
-              <strong>Academic Calendar:</strong> Official academic schedule
-              including semester dates, examination schedules, holidays, and
-              submission deadlines. Only admins can modify this calendar.
-            </p>
-          </div>
-        </motion.div>
+            <div className="mt-4 flex items-center justify-between">
+              <Badge tone={option.canEdit ? "success" : "neutral"}>
+                {option.editLabel}
+              </Badge>
+              <span className="flex items-center gap-1 text-sm font-medium text-brand-600 transition group-hover:gap-2">
+                View <FiCalendar className="h-3.5 w-3.5" />
+              </span>
+            </div>
+          </Link>
+        ))}
       </div>
+
+      <Card>
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              <FiBook className="text-brand-600" /> About calendars
+            </span>
+          }
+        />
+        <CardBody className="space-y-2 text-sm text-ink-soft">
+          <p>
+            <strong className="text-ink">Events Calendar:</strong> College
+            events, workshops, seminars, cultural activities, and important
+            dates. Teachers and admins can add and manage events.
+          </p>
+          <p>
+            <strong className="text-ink">Academic Calendar:</strong> Official
+            academic schedule including semester dates, examination schedules,
+            holidays, and submission deadlines. Only admins can modify this
+            calendar.
+          </p>
+        </CardBody>
+      </Card>
     </div>
   );
 }

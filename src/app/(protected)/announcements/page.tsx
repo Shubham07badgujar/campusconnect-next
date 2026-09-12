@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { firestore, auth } from "@/lib/client/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import {
@@ -9,11 +8,15 @@ import {
   FiCalendar,
   FiInfo,
   FiAlertCircle,
-  FiArrowLeft,
 } from "react-icons/fi";
 import AnnouncementsBanner from "@/components/common/AnnouncementsBanner";
 import NotificationsModal from "@/components/common/NotificationsModal";
 import { useRouter } from "next/navigation";
+import PageHeader from "@/components/ui/PageHeader";
+import { Card, CardBody } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { PageLoader, EmptyState } from "@/components/ui/States";
 
 const Announcements = () => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -49,26 +52,26 @@ const Announcements = () => {
   const getTypeIcon = (type: any) => {
     switch (type) {
       case "urgent":
-        return <FiAlertCircle className="text-red-500" />;
+        return <FiAlertCircle className="h-4 w-4 text-danger" />;
       case "event":
-        return <FiCalendar className="text-green-500" />;
+        return <FiCalendar className="h-4 w-4 text-success" />;
       case "academic":
-        return <FiInfo className="text-blue-500" />;
+        return <FiInfo className="h-4 w-4 text-info" />;
       default:
-        return <FiInfo className="text-indigo-500" />;
+        return <FiInfo className="h-4 w-4 text-brand-600" />;
     }
   };
 
-  const getTypeBg = (type: any) => {
+  const getTypeTone = (type: any) => {
     switch (type) {
       case "urgent":
-        return "bg-red-50 border-red-200";
+        return "danger" as const;
       case "event":
-        return "bg-green-50 border-green-200";
+        return "success" as const;
       case "academic":
-        return "bg-blue-50 border-blue-200";
+        return "info" as const;
       default:
-        return "bg-indigo-50 border-indigo-200";
+        return "brand" as const;
     }
   };
 
@@ -86,103 +89,72 @@ const Announcements = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <button
-        onClick={() => router.push("/student-dashboard")}
-        className="flex items-center mt-4 sm:mt-8 mx-4 sm:mx-8 text-red-600 hover:text-green-800 transition-colors"
-      >
-        <FiArrowLeft className="mr-2" />
-        Go Back
-      </button>
+    <div className="animate-fade-up space-y-6">
       <AnnouncementsBanner />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-1">
-              Announcements
-            </h1>
-            <p className="text-gray-600">
-              Stay updated with the latest campus news and events
-            </p>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowModal(true)}
-            className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-lg flex items-center justify-center"
-          >
-            <FiBell className="mr-2" /> View All Notifications
-          </motion.button>
-        </div>
+      <PageHeader
+        title="Announcements"
+        description="Stay updated with the latest campus news and events."
+        actions={
+          <Button onClick={() => setShowModal(true)}>
+            <FiBell className="h-4 w-4" /> View All Notifications
+          </Button>
+        }
+      />
 
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-          </div>
-        ) : announcements.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-            <div className="mx-auto w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-              <FiBell className="w-8 h-8 text-indigo-500" />
-            </div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
-              No announcements yet
-            </h3>
-            <p className="mt-2 text-sm text-gray-500">
-              Check back later for campus news and updates
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {announcements.map((announcement) => (
-              <motion.div
-                key={announcement.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`p-5 rounded-xl shadow-sm border ${getTypeBg(
-                  announcement.type,
-                )} ${
-                  !announcement.isRead
-                    ? "ring-2 ring-offset-2 ring-indigo-300"
-                    : ""
-                }`}
-              >
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <div className="flex items-center mb-2">
-                      <div className="p-2 rounded-full bg-white shadow-sm mr-3">
+      {loading ? (
+        <PageLoader label="Loading announcements..." />
+      ) : announcements.length === 0 ? (
+        <EmptyState
+          icon={FiBell}
+          title="No announcements yet"
+          description="Check back later for campus news and updates."
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {announcements.map((announcement) => (
+            <Card
+              key={announcement.id}
+              className={
+                !announcement.isRead
+                  ? "border-brand-200 ring-1 ring-brand-100"
+                  : ""
+              }
+            >
+              <CardBody>
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="min-w-0">
+                    <div className="mb-2 flex items-center gap-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-canvas">
                         {getTypeIcon(announcement.type)}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900 text-lg">
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="flex flex-wrap items-center gap-2 text-base font-semibold text-ink">
                           {announcement.title}
                           {!announcement.isRead && (
-                            <span className="ml-2 bg-indigo-500 text-white text-xs px-2 py-0.5 rounded-full">
-                              New
-                            </span>
+                            <Badge tone="brand">New</Badge>
                           )}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs text-ink-faint">
                           {formatDate(announcement.createdAt)}
                         </p>
                       </div>
                     </div>
-                    <div className="pl-12 text-gray-700 whitespace-pre-wrap">
+                    <div className="whitespace-pre-wrap pl-12 text-sm text-ink-soft">
                       {announcement.message}
                     </div>
                   </div>
-                  <div className="md:text-right">
-                    <span className="inline-block px-3 py-1 bg-white shadow-sm rounded-full text-xs uppercase font-semibold">
-                      {announcement.type || "General"}
-                    </span>
+                  <div className="shrink-0 md:text-right">
+                    <Badge tone={getTypeTone(announcement.type)}>
+                      {(announcement.type || "General").toUpperCase()}
+                    </Badge>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <NotificationsModal
         isOpen={showModal}

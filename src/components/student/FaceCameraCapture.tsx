@@ -3,6 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as faceapi from "face-api.js";
 import "@tensorflow/tfjs";
+import { Camera } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 const MODEL_BASE_URL =
   process.env.NEXT_PUBLIC_FACE_API_MODEL_URL || "/models";
@@ -244,9 +246,11 @@ export default function FaceCameraCapture({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-sm font-semibold text-slate-700">Face Camera</p>
-      <div className="mx-auto mt-3 aspect-[3/4] w-56 max-w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-900 sm:w-64">
+    <div className="rounded-card border border-line bg-surface p-4">
+      <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <Camera className="h-4 w-4 text-ink-faint" /> Face Camera
+      </p>
+      <div className="mx-auto mt-3 aspect-[3/4] w-56 max-w-full overflow-hidden rounded-lg border border-line bg-slate-900 sm:w-64">
         <video
           ref={videoRef}
           className="h-full w-full object-cover"
@@ -255,16 +259,17 @@ export default function FaceCameraCapture({
           autoPlay
         />
       </div>
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        className="mt-3"
         disabled={disabled || !cameraReady || capturing}
+        loading={capturing}
         onClick={captureFace}
-        className="mt-3 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
       >
         {capturing ? "Processing..." : buttonLabel}
-      </button>
-      {status ? <p className="mt-2 text-xs text-slate-600">{status}</p> : null}
-      {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
+      </Button>
+      {status ? <p className="mt-2 text-xs text-ink-soft">{status}</p> : null}
+      {error ? <p className="mt-2 text-xs text-danger">{error}</p> : null}
       {!(typeof window !== "undefined" && window.isSecureContext) ? (
         <p className="mt-2 text-xs text-amber-700">
           Use HTTPS for reliable camera and biometric APIs.
