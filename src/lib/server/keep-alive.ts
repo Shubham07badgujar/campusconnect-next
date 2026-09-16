@@ -30,6 +30,16 @@ const startDayUtcMs = (): number => {
   return Date.UTC(y, (m || 1) - 1, d || 1);
 };
 
+// Telemetry for the scheduler's OWN outbound self-pings (inbound hits from
+// curl/uptime checkers are deliberately not counted) so the route can prove
+// the 14-minute loop is really firing without needing the Render dashboard.
+// Process-local: resets whenever Render restarts or redeploys the service.
+let pingCount = 0;
+let lastPingAt: string | null = null;
+let lastPingStatus: number | string | null = null;
+let schedulerArmed = false;
+const bootedAt = new Date().toISOString();
+
 export type KeepAliveStatus = {
   ok: true;
   service: "keep-alive";
@@ -41,6 +51,12 @@ export type KeepAliveStatus = {
   window: string;
   startsOn: string;
   localTime: string;
+  schedulerArmed: boolean;
+  pingCount: number;
+  lastPingAt: string | null;
+  lastPingStatus: number | string | null;
+  minutesSinceLastPing: number | null;
+  bootedAt: string;
 };
 
 export function computeStatus(now: Date = new Date()): KeepAliveStatus {
@@ -80,6 +96,14 @@ export function computeStatus(now: Date = new Date()): KeepAliveStatus {
     window: "07:00-23:45 (UTC+05:30)",
     startsOn: START_DATE,
     localTime: `${hh}:${mm}`,
+    schedulerArmed,
+    pingCount,
+    lastPingAt,
+    lastPingStatus,
+    minutesSinceLastPing: lastPingAt
+      ? Math.round(((now.getTime() - Date.parse(lastPingAt)) / 60000) * 10) / 10
+      : null,
+    bootedAt,
   };
 }
 
@@ -109,9 +133,14 @@ export function startKeepAliveScheduler(): void {
   const ping = async (attempt = 1): Promise<void> => {
     try {
       const res = await fetch(`${baseUrl}/api/keep-alive`, { cache: "no-store" });
-      console.log(`Keep-alive ping -> ${res.status}`);
+      pingCount += 1;
+      lastPingAt = new Date().toISOString();
+      lastPingStatus = res.status;
+      console.log(`Keep-alive ping #${pingCount} -> ${res.status} at ${lastPingAt}`);
     } catch (error) {
-      console.error(`Keep-alive ping failed (attempt ${attempt}):`, (error as Error).message);
+      const message = (error as Error).message;
+      lastPingStatus = `error: ${message}`;
+      console.error(`Keep-alive ping failed (attempt ${attempt}):`, message);
       // One 15-minute idle gap puts the service to sleep, so retry quickly.
       if (attempt < 3) setTimeout(() => ping(attempt + 1), 60 * 1000);
     }
@@ -130,6 +159,7 @@ export function startKeepAliveScheduler(): void {
 
   const timer = setInterval(tick, PING_INTERVAL_MS);
   setTimeout(tick, 45 * 1000); // first ping shortly after boot (e.g. the 7 AM wake-up)
+  schedulerArmed = true;
   console.log(
     `Keep-alive scheduler started: ping every 14 min, 07:00-23:45 IST, ${TOTAL_DAYS} days from ${START_DATE}, target ${baseUrl}`,
   );
