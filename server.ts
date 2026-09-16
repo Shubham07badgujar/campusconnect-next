@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import { setIO } from "./src/lib/server/socket-io";
 import { registerSocketHandlers } from "./src/server/socket";
 import { startExamReminderScheduler } from "./src/lib/server/exam-reminders";
+import { startKeepAliveScheduler } from "./src/lib/server/keep-alive";
 
 const dev = process.env.NODE_ENV !== "production";
 const port = Number(process.env.PORT) || 3000;
@@ -42,6 +43,8 @@ app
     } else {
       console.log("Exam reminder scheduler disabled by configuration.");
     }
+
+    startKeepAliveScheduler();
 
     httpServer.listen(port, "0.0.0.0", () => {
       console.log(`✅ CampusConnect ready on http://localhost:${port} (dev=${dev})`);
