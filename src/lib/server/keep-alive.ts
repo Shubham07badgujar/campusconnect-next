@@ -33,12 +33,32 @@ const startDayUtcMs = (): number => {
 // Telemetry for the scheduler's OWN outbound self-pings (inbound hits from
 // curl/uptime checkers are deliberately not counted) so the route can prove
 // the 14-minute loop is really firing without needing the Render dashboard.
-// Process-local: resets whenever Render restarts or redeploys the service.
-let pingCount = 0;
-let lastPingAt: string | null = null;
-let lastPingStatus: number | string | null = null;
-let schedulerArmed = false;
-const bootedAt = new Date().toISOString();
+// Held on globalThis, NOT in module state: server.ts loads this file through
+// tsx while the /api/keep-alive route gets Next's compiled copy — two separate
+// module instances in the same process. Plain module variables would leave the
+// route reading an always-zero copy while the scheduler counts in its own.
+// Resets whenever Render restarts or redeploys the service.
+type KeepAliveTelemetry = {
+  pingCount: number;
+  lastPingAt: string | null;
+  lastPingStatus: number | string | null;
+  schedulerArmed: boolean;
+  urlSource: string;
+  bootedAt: string;
+};
+const TELEMETRY_KEY = Symbol.for("campusconnect.keep-alive-telemetry");
+const globalStore = globalThis as Record<symbol, unknown>;
+if (!globalStore[TELEMETRY_KEY]) {
+  globalStore[TELEMETRY_KEY] = {
+    pingCount: 0,
+    lastPingAt: null,
+    lastPingStatus: null,
+    schedulerArmed: false,
+    urlSource: "none",
+    bootedAt: new Date().toISOString(),
+  } satisfies KeepAliveTelemetry;
+}
+const telemetry = globalStore[TELEMETRY_KEY] as KeepAliveTelemetry;
 
 export type KeepAliveStatus = {
   ok: true;
@@ -97,15 +117,15 @@ export function computeStatus(now: Date = new Date()): KeepAliveStatus {
     window: "07:00-23:45 (UTC+05:30)",
     startsOn: START_DATE,
     localTime: `${hh}:${mm}`,
-    schedulerArmed,
-    urlSource,
-    pingCount,
-    lastPingAt,
-    lastPingStatus,
-    minutesSinceLastPing: lastPingAt
-      ? Math.round(((now.getTime() - Date.parse(lastPingAt)) / 60000) * 10) / 10
+    schedulerArmed: telemetry.schedulerArmed,
+    urlSource: telemetry.urlSource,
+    pingCount: telemetry.pingCount,
+    lastPingAt: telemetry.lastPingAt,
+    lastPingStatus: telemetry.lastPingStatus,
+    minutesSinceLastPing: telemetry.lastPingAt
+      ? Math.round(((now.getTime() - Date.parse(telemetry.lastPingAt)) / 60000) * 10) / 10
       : null,
-    bootedAt,
+    bootedAt: telemetry.bootedAt,
   };
 }
 
@@ -115,26 +135,26 @@ export function computeStatus(now: Date = new Date()): KeepAliveStatus {
 // scheduler. `urlSource` is reported by the route so the active path is visible.
 const FALLBACK_PUBLIC_URL = "https://campusconnect-next.onrender.com";
 
-let urlSource = "none";
+
 
 const resolveSelfUrl = (): string => {
   const clean = (u: string) => u.trim().replace(/\/+$/, "");
 
   const explicit = String(process.env.KEEP_ALIVE_URL || "");
   if (explicit.trim()) {
-    urlSource = "KEEP_ALIVE_URL";
+    telemetry.urlSource = "KEEP_ALIVE_URL";
     return clean(explicit);
   }
 
   const renderUrl = String(process.env.RENDER_EXTERNAL_URL || "");
   if (renderUrl.trim()) {
-    urlSource = "RENDER_EXTERNAL_URL";
+    telemetry.urlSource = "RENDER_EXTERNAL_URL";
     return clean(renderUrl);
   }
 
   // Render sets RENDER=true in its runtime; treat that as "definitely hosted".
   if (String(process.env.RENDER || "").trim()) {
-    urlSource = "fallback(RENDER)";
+    telemetry.urlSource = "fallback(RENDER)";
     return FALLBACK_PUBLIC_URL;
   }
 
@@ -142,14 +162,14 @@ const resolveSelfUrl = (): string => {
   // KEEP_ALIVE_DISABLE=true to stop a local `npm start` pinging the live site.
   if (process.env.NODE_ENV === "production") {
     if (String(process.env.KEEP_ALIVE_DISABLE || "").trim().toLowerCase() === "true") {
-      urlSource = "disabled";
+      telemetry.urlSource = "disabled";
       return "";
     }
-    urlSource = "fallback(NODE_ENV=production)";
+    telemetry.urlSource = "fallback(NODE_ENV=production)";
     return FALLBACK_PUBLIC_URL;
   }
 
-  urlSource = "none";
+  telemetry.urlSource = "none";
   return "";
 };
 
@@ -172,13 +192,13 @@ export function startKeepAliveScheduler(): void {
   const ping = async (attempt = 1): Promise<void> => {
     try {
       const res = await fetch(`${baseUrl}/api/keep-alive`, { cache: "no-store" });
-      pingCount += 1;
-      lastPingAt = new Date().toISOString();
-      lastPingStatus = res.status;
-      console.log(`Keep-alive ping #${pingCount} -> ${res.status} at ${lastPingAt}`);
+      telemetry.pingCount += 1;
+      telemetry.lastPingAt = new Date().toISOString();
+      telemetry.lastPingStatus = res.status;
+      console.log(`Keep-alive ping #${telemetry.pingCount} -> ${res.status} at ${telemetry.lastPingAt}`);
     } catch (error) {
       const message = (error as Error).message;
-      lastPingStatus = `error: ${message}`;
+      telemetry.lastPingStatus = `error: ${message}`;
       console.error(`Keep-alive ping failed (attempt ${attempt}):`, message);
       // One 15-minute idle gap puts the service to sleep, so retry quickly.
       if (attempt < 3) setTimeout(() => ping(attempt + 1), 60 * 1000);
@@ -198,7 +218,7 @@ export function startKeepAliveScheduler(): void {
 
   const timer = setInterval(tick, PING_INTERVAL_MS);
   setTimeout(tick, 45 * 1000); // first ping shortly after boot (e.g. the 7 AM wake-up)
-  schedulerArmed = true;
+  telemetry.schedulerArmed = true;
   console.log(
     `Keep-alive scheduler started: ping every 14 min, 07:00-23:45 IST, ${TOTAL_DAYS} days from ${START_DATE}, target ${baseUrl}`,
   );
