@@ -52,6 +52,7 @@ export type KeepAliveStatus = {
   startsOn: string;
   localTime: string;
   schedulerArmed: boolean;
+  urlSource: string;
   pingCount: number;
   lastPingAt: string | null;
   lastPingStatus: number | string | null;
@@ -97,6 +98,7 @@ export function computeStatus(now: Date = new Date()): KeepAliveStatus {
     startsOn: START_DATE,
     localTime: `${hh}:${mm}`,
     schedulerArmed,
+    urlSource,
     pingCount,
     lastPingAt,
     lastPingStatus,
@@ -107,11 +109,48 @@ export function computeStatus(now: Date = new Date()): KeepAliveStatus {
   };
 }
 
+// The service's own public URL, used as the self-ping target. RENDER_EXTERNAL_URL
+// is NOT reliably present on every Render service (it was absent here), so the
+// chain ends in the known production host rather than silently disabling the
+// scheduler. `urlSource` is reported by the route so the active path is visible.
+const FALLBACK_PUBLIC_URL = "https://campusconnect-next.onrender.com";
+
+let urlSource = "none";
+
 const resolveSelfUrl = (): string => {
-  const url = String(
-    process.env.KEEP_ALIVE_URL || process.env.RENDER_EXTERNAL_URL || "",
-  ).trim();
-  return url.replace(/\/+$/, "");
+  const clean = (u: string) => u.trim().replace(/\/+$/, "");
+
+  const explicit = String(process.env.KEEP_ALIVE_URL || "");
+  if (explicit.trim()) {
+    urlSource = "KEEP_ALIVE_URL";
+    return clean(explicit);
+  }
+
+  const renderUrl = String(process.env.RENDER_EXTERNAL_URL || "");
+  if (renderUrl.trim()) {
+    urlSource = "RENDER_EXTERNAL_URL";
+    return clean(renderUrl);
+  }
+
+  // Render sets RENDER=true in its runtime; treat that as "definitely hosted".
+  if (String(process.env.RENDER || "").trim()) {
+    urlSource = "fallback(RENDER)";
+    return FALLBACK_PUBLIC_URL;
+  }
+
+  // Last resort so a hosted production process is never left un-armed. Set
+  // KEEP_ALIVE_DISABLE=true to stop a local `npm start` pinging the live site.
+  if (process.env.NODE_ENV === "production") {
+    if (String(process.env.KEEP_ALIVE_DISABLE || "").trim().toLowerCase() === "true") {
+      urlSource = "disabled";
+      return "";
+    }
+    urlSource = "fallback(NODE_ENV=production)";
+    return FALLBACK_PUBLIC_URL;
+  }
+
+  urlSource = "none";
+  return "";
 };
 
 /**
