@@ -327,7 +327,11 @@ export async function POST(req: NextRequest) {
       enrolledStudentIds,
     };
 
-    getIO()?.emit("attendance-session-started", responseSession);
+    // The global broadcast reaches EVERY connected socket, so it must carry no
+    // roster or personal data — it is only a "something changed, refetch" nudge,
+    // and clients already refresh through the guarded API. The full payload goes
+    // to the session room, whose membership is authorized in socket-auth.ts.
+    getIO()?.emit("attendance-session-started", { sessionId: sessionRef.id });
     getIO()
       ?.to(`attendance_${sessionRef.id}`)
       .emit("attendance-session-started", responseSession);

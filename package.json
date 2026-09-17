@@ -8,7 +8,9 @@
     "dev": "tsx watch server.ts",
     "build": "next build",
     "start": "cross-env NODE_ENV=production tsx server.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "engines": {
     "node": ">=20.6"
@@ -54,6 +56,7 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^5.0.1"
   }
 }

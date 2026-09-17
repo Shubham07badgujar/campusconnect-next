@@ -166,7 +166,12 @@ export async function POST(req: NextRequest) {
       endTime: new Date(nowMs).toISOString(),
     };
 
-    getIO()?.emit("attendance-session-ended", sessionEndedPayload);
+    // The global broadcast reaches EVERY connected socket, so it must not carry
+    // the present/absent rosters — that would disclose exactly who was absent,
+    // by name and PRN, to every signed-in user. Students only read `sessionId`
+    // from this event; the owning teacher receives the full summary through the
+    // session room below, whose membership is authorized in socket-auth.ts.
+    getIO()?.emit("attendance-session-ended", { sessionId, status: "ended" });
     getIO()
       ?.to(`attendance_${sessionId}`)
       .emit("attendance-session-ended", sessionEndedPayload);

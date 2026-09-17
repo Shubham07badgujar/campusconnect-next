@@ -1,0 +1,39 @@
+# Build/test gate. Until this existed nothing stopped a non-compiling or
+# insecure commit reaching production — the only workflow in the repo was a
+# keep-alive ping. The socket security suite in particular must not regress:
+# it is the only control on a channel that writes through the Admin SDK and
+# therefore bypasses firestore.rules.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      # Runs last: it is the slowest step, and a type or test failure should
+      # report first. Credentials are deliberately absent — the build must stay
+      # credential-independent (firebase-admin initializes lazily at request
+      # time), and this job proves that property on every push.
+      - name: Build
+        run: npm run build

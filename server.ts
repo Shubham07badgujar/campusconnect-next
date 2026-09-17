@@ -28,8 +28,12 @@ app
     });
 
     const io = new Server(httpServer, {
-      // Same-origin in production; loose CORS keeps localhost dev tooling happy.
-      cors: { origin: true, credentials: true },
+      // The app connects same-origin, which needs no CORS entry at all. In dev we
+      // reflect the origin so tooling on another port can attach.
+      // `origin: true` reflects ANY origin, so it must never be used in
+      // production: combined with a browser's credentials it would let an
+      // attacker-controlled page open a socket against a signed-in user.
+      ...(dev ? { cors: { origin: true, credentials: true } } : {}),
     });
     setIO(io);
     registerSocketHandlers(io);

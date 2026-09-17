@@ -1,5 +1,13 @@
-// Socket.IO connection handlers — verbatim TS port of the legacy Express
-// io.on("connection") block (chat rooms, attendance session rooms, messaging).
+// Socket.IO connection handlers (chat rooms, attendance session rooms, messaging).
+//
+// SECURITY MODEL: every handler below derives the acting user from the verified
+// Firebase ID token attached by installSocketAuth (src/server/socket-auth.ts).
+// Client-supplied senderId / userId / role fields are ignored on purpose — these
+// handlers write through the Admin SDK, which bypasses firestore.rules, so this
+// file is the only thing standing between a client and the database.
+//
+// Clients may still name WHAT they want to act on (chatId, sessionId); the server
+// then proves they are allowed to.
 import type { Server, Socket } from "socket.io";
 import adminApp from "@/lib/server/firebase-admin";
 import {
@@ -13,25 +21,55 @@ import {
   getAttendanceJoinedStudentsList,
   getAttendanceSessionJoinMap,
 } from "@/lib/server/socket-io";
+import {
+  installSocketAuth,
+  loadChatForParticipant,
+  loadSessionForMember,
+  registerReauthHandler,
+  requireIdentity,
+} from "@/server/socket-auth";
 
-type SessionPayload = string | { sessionId?: string; studentLocation?: { lat?: unknown; lng?: unknown } };
+type SessionPayload =
+  | string
+  | { sessionId?: string; studentLocation?: { lat?: unknown; lng?: unknown } };
+
+/** Bounded so a single socket frame cannot push an unbounded document. */
+const MAX_MESSAGE_CHARS = 5000;
+const MAX_REPLY_PREVIEW_CHARS = 500;
 
 export function registerSocketHandlers(io: Server): void {
-  io.on("connection", (socket: Socket) => {
-    console.log("New client connected:", socket.id);
+  // Gate the connection before any handler can run.
+  installSocketAuth(io);
 
-    // Join a chat room (student-teacher conversation)
-    socket.on("join_chat", (chatRoomId: string) => {
-      socket.join(chatRoomId);
-      console.log(`User ${socket.id} joined room: ${chatRoomId}`);
+  io.on("connection", (socket: Socket) => {
+    registerReauthHandler(socket);
+
+    // Join a chat room (student-teacher conversation) — participants only.
+    socket.on("join_chat", async (chatRoomId: unknown) => {
+      const identity = requireIdentity(socket);
+      if (!identity) return;
+
+      const chatId = String(chatRoomId || "").trim();
+      const membership = await loadChatForParticipant(chatId, identity.uid);
+      if (!membership) {
+        socket.emit("chat_error", { error: "Not authorized for this conversation" });
+        return;
+      }
+
+      socket.join(chatId);
     });
 
     socket.on("join_attendance_session", async (sessionPayload: SessionPayload) => {
+      const identity = requireIdentity(socket);
+      if (!identity) return;
+
       const normalizedSessionId = String(
         typeof sessionPayload === "string"
           ? sessionPayload
           : sessionPayload?.sessionId || "",
       ).trim();
+      if (!normalizedSessionId) return;
+
       const payloadObject =
         typeof sessionPayload === "object" && sessionPayload !== null
           ? sessionPayload
@@ -42,47 +80,41 @@ export function registerSocketHandlers(io: Server): void {
       };
       const hasStudentLocation =
         !Number.isNaN(candidateLocation.lat) && !Number.isNaN(candidateLocation.lng);
-      const roomId = `attendance_${normalizedSessionId}`;
-      if (!normalizedSessionId) {
+
+      // Only the owning teacher or an enrolled student may enter the room; this
+      // is what stops arbitrary session joining and roster/location snooping.
+      const membership = await loadSessionForMember(normalizedSessionId, identity);
+      if (!membership) {
+        socket.emit("attendance_error", {
+          error: "Not authorized for this attendance session",
+        });
         return;
       }
 
+      const roomId = `attendance_${normalizedSessionId}`;
       socket.join(roomId);
-      console.log(`User ${socket.id} joined attendance room: ${roomId}`);
 
-      const joinedSnapshot = getAttendanceJoinedStudentsList(normalizedSessionId);
       socket.emit("attendance-joined-students-snapshot", {
         sessionId: normalizedSessionId,
-        students: joinedSnapshot,
+        students: getAttendanceJoinedStudentsList(normalizedSessionId),
       });
 
-      const connectedUserId = String(socket.handshake?.query?.userId || "").trim();
-      if (!connectedUserId) {
-        return;
-      }
+      // Teachers observe the room; only students are tracked as "joined".
+      if (membership.role !== "student") return;
 
       try {
         const firestore = adminApp.firestore();
-        const studentProfile = await getStudentProfileByUid(firestore, connectedUserId);
-        if (!studentProfile) {
-          return;
-        }
-
-        const roleValue = String(studentProfile.role || "").toLowerCase();
-        if (roleValue && roleValue !== "student") {
-          return;
-        }
+        const studentProfile = await getStudentProfileByUid(firestore, identity.uid);
+        if (!studentProfile) return;
 
         const joinMap = getAttendanceSessionJoinMap(normalizedSessionId);
-        if (!joinMap) {
-          return;
-        }
+        if (!joinMap) return;
 
-        const existingJoinedPayload = joinMap.get(connectedUserId) || null;
+        const existingJoinedPayload = joinMap.get(identity.uid) || null;
 
         const joinedPayload = {
           sessionId: normalizedSessionId,
-          studentId: connectedUserId,
+          studentId: identity.uid,
           studentName: String(
             studentProfile.name || studentProfile.displayName || "Student",
           ),
@@ -97,7 +129,7 @@ export function registerSocketHandlers(io: Server): void {
             : (existingJoinedPayload?.lng ?? null),
         };
 
-        joinMap.set(connectedUserId, joinedPayload);
+        joinMap.set(identity.uid, joinedPayload);
         io.to(roomId).emit("attendance-student-joined", joinedPayload);
         io.to(roomId).emit("attendance-joined-students-snapshot", {
           sessionId: normalizedSessionId,
@@ -109,7 +141,7 @@ export function registerSocketHandlers(io: Server): void {
             sessionId: normalizedSessionId,
             lat: candidateLocation.lat,
             lng: candidateLocation.lng,
-            studentId: connectedUserId,
+            studentId: identity.uid,
           });
         }
       } catch (error) {
@@ -118,33 +150,24 @@ export function registerSocketHandlers(io: Server): void {
     });
 
     socket.on("leave_attendance_session", (sessionPayload: SessionPayload) => {
+      const identity = requireIdentity(socket);
+      if (!identity) return;
+
       const normalizedSessionId = String(
         typeof sessionPayload === "string"
           ? sessionPayload
           : sessionPayload?.sessionId || "",
       ).trim();
-
-      if (!normalizedSessionId) {
-        return;
-      }
+      if (!normalizedSessionId) return;
 
       const roomId = `attendance_${normalizedSessionId}`;
       socket.leave(roomId);
 
-      const connectedUserId = String(socket.handshake?.query?.userId || "").trim();
-      if (!connectedUserId) {
-        return;
-      }
-
       const joinMap = getAttendanceSessionJoinMap(normalizedSessionId);
-      if (!joinMap) {
-        return;
-      }
+      if (!joinMap) return;
 
-      const removed = joinMap.delete(connectedUserId);
-      if (!removed) {
-        return;
-      }
+      // Keyed on the verified uid, so a socket can only remove *itself*.
+      if (!joinMap.delete(identity.uid)) return;
 
       io.to(roomId).emit("attendance-joined-students-snapshot", {
         sessionId: normalizedSessionId,
@@ -155,23 +178,40 @@ export function registerSocketHandlers(io: Server): void {
     // Handle message sending
     socket.on("send_message", async (messageData: Record<string, unknown>) => {
       try {
-        const { chatId, message, senderId, receiverId, timestamp, attachment, replyTo } =
-          messageData as {
-            chatId?: string;
-            message?: string;
-            senderId?: string;
-            receiverId?: string;
-            timestamp?: string;
-            attachment?: ChatAttachment | null;
-            replyTo?: Record<string, unknown> | null;
-          };
+        const identity = requireIdentity(socket);
+        if (!identity) return;
 
-        const normalizedMessage = String(message || "").trim();
-        const normalizedTimestamp =
-          String(timestamp || "").trim() || new Date().toISOString();
+        // NOTE: senderId and receiverId are deliberately NOT read from the
+        // payload. The sender is the authenticated socket; the recipient is
+        // derived from the chat document.
+        const { chatId, message, attachment, replyTo } = messageData as {
+          chatId?: string;
+          message?: string;
+          attachment?: ChatAttachment | null;
+          replyTo?: Record<string, unknown> | null;
+        };
+
+        const normalizedChatId = String(chatId || "").trim();
+        const membership = await loadChatForParticipant(
+          normalizedChatId,
+          identity.uid,
+        );
+        if (!membership) {
+          socket.emit("message_error", {
+            error: "Not authorized for this conversation",
+          });
+          return;
+        }
+
+        const normalizedMessage = String(message || "")
+          .trim()
+          .slice(0, MAX_MESSAGE_CHARS);
+        // Server-stamped: a client-supplied timestamp lets a sender forge
+        // ordering, so it is ignored.
+        const normalizedTimestamp = new Date().toISOString();
         const hasAttachment = Boolean(attachment?.url);
 
-        if (!chatId || !senderId || !receiverId || (!normalizedMessage && !hasAttachment)) {
+        if (!normalizedMessage && !hasAttachment) {
           socket.emit("message_error", {
             error: "Message text or attachment is required",
           });
@@ -201,7 +241,7 @@ export function registerSocketHandlers(io: Server): void {
                 senderName: String(replyTo.senderName || "").trim(),
                 message: String(replyTo.message || "")
                   .trim()
-                  .slice(0, 500),
+                  .slice(0, MAX_REPLY_PREVIEW_CHARS),
                 attachmentName: String(replyTo.attachmentName || "").trim(),
                 attachmentType: String(replyTo.attachmentType || "")
                   .trim()
@@ -214,16 +254,21 @@ export function registerSocketHandlers(io: Server): void {
             ? normalizedReplyToCandidate
             : null;
 
-        const messageRef = await adminApp.firestore().collection("messages").add({
-          chatId,
+        const persistedMessage = {
+          chatId: membership.chatId,
           message: normalizedMessage,
           attachment: normalizedAttachment,
           replyTo: normalizedReplyTo,
-          senderId,
-          receiverId,
+          senderId: identity.uid,
+          receiverId: membership.counterpartId,
           timestamp: normalizedTimestamp,
           read: false,
-        });
+        };
+
+        const messageRef = await adminApp
+          .firestore()
+          .collection("messages")
+          .add(persistedMessage);
 
         const lastMessageText = buildChatLastMessage(
           normalizedMessage,
@@ -231,7 +276,7 @@ export function registerSocketHandlers(io: Server): void {
         );
 
         // Update the chat document with the last message
-        await adminApp.firestore().collection("chats").doc(chatId).update({
+        await adminApp.firestore().collection("chats").doc(membership.chatId).update({
           lastMessage: lastMessageText,
           lastMessageTimestamp: normalizedTimestamp,
           updatedAt: adminApp.firestore.FieldValue.serverTimestamp(),
@@ -239,12 +284,8 @@ export function registerSocketHandlers(io: Server): void {
 
         // Only broadcast to others in the room, not back to sender —
         // the sender gets updates via Firestore, avoiding duplicates.
-        socket.to(chatId).emit("receive_message", {
-          ...messageData,
-          message: normalizedMessage,
-          attachment: normalizedAttachment,
-          replyTo: normalizedReplyTo,
-          timestamp: normalizedTimestamp,
+        socket.to(membership.chatId).emit("receive_message", {
+          ...persistedMessage,
           id: messageRef.id,
         });
 
@@ -261,20 +302,30 @@ export function registerSocketHandlers(io: Server): void {
       }
     });
 
-    // Handle typing status
-    socket.on("typing", ({ chatId, username }: { chatId: string; username: string }) => {
-      socket.to(chatId).emit("typing_indicator", { username, isTyping: true });
-    });
+    // Handle typing status. Membership is implied by room presence, which
+    // join_chat already authorized — so this needs no extra Firestore read.
+    const emitTyping = (chatId: unknown, isTyping: boolean) => {
+      const identity = requireIdentity(socket);
+      if (!identity) return;
 
-    socket.on(
-      "stop_typing",
-      ({ chatId, username }: { chatId: string; username: string }) => {
-        socket.to(chatId).emit("typing_indicator", { username, isTyping: false });
-      },
+      const normalizedChatId = String(chatId || "").trim();
+      if (!normalizedChatId || !socket.rooms.has(normalizedChatId)) return;
+
+      // The displayed name comes from the verified token, not the payload,
+      // so the typing indicator cannot be attributed to someone else.
+      socket.to(normalizedChatId).emit("typing_indicator", {
+        username: identity.name || "Someone",
+        isTyping,
+      });
+    };
+
+    socket.on("typing", ({ chatId }: { chatId?: string }) => emitTyping(chatId, true));
+    socket.on("stop_typing", ({ chatId }: { chatId?: string }) =>
+      emitTyping(chatId, false),
     );
 
     socket.on("disconnect", () => {
-      console.log("Client disconnected:", socket.id);
+      // no-op: attendance join state is cleared explicitly on leave/end
     });
   });
 }

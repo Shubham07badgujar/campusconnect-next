@@ -49,10 +49,20 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       // Same-origin: Socket.IO lives on the same custom server as the app.
+      //
+      // The server derives identity solely from this token (see
+      // src/server/socket-auth.ts), so no user id is sent alongside it — one
+      // would be ignored anyway. `auth` is a callback because socket.io invokes
+      // it before every connection AND every reconnection, which keeps a fresh
+      // ID token on the wire without us tracking expiry here.
       nextSocket = io({
-        query: {
-          userId: user.uid,
-          userName: user.displayName || "Anonymous",
+        auth: (cb: (data: Record<string, unknown>) => void) => {
+          user
+            .getIdToken()
+            .then((token) => cb({ token }))
+            // Hand back an empty token rather than hanging: the server rejects
+            // it and `connect_error` surfaces a real message to the user.
+            .catch(() => cb({ token: "" }));
         },
         reconnectionAttempts: 6,
         reconnectionDelay: 1000,
@@ -69,8 +79,17 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const onConnectError = (err: Error) => {
-      console.error("Socket connection error:", err);
-      setConnectionError("Realtime connection issue");
+      // The server rejects with UNAUTHENTICATED (bad/expired token) or
+      // AUTH_UNAVAILABLE (Admin SDK unreachable) — worth telling apart, because
+      // one is the user's session and the other is a server misconfiguration.
+      if (err?.message === "AUTH_UNAVAILABLE") {
+        setConnectionError("Realtime service unavailable");
+      } else if (err?.message === "UNAUTHENTICATED") {
+        setConnectionError("Session expired — please sign in again");
+      } else {
+        setConnectionError("Realtime connection issue");
+      }
+      console.error("Socket connection error:", err?.message || err);
     };
 
     const onDisconnect = (reason: string) => {
@@ -79,9 +98,22 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
+    // Sockets outlive the ~1h ID token. Rather than dropping a connection
+    // mid-lecture, the server asks for a fresh token in place.
+    const onAuthExpired = async () => {
+      try {
+        const token = await user.getIdToken(true);
+        nextSocket.emit("reauthenticate", { token });
+      } catch (err) {
+        console.error("Socket reauthentication failed:", err);
+        setConnectionError("Session expired — please sign in again");
+      }
+    };
+
     nextSocket.on("connect", onConnect);
     nextSocket.on("connect_error", onConnectError);
     nextSocket.on("disconnect", onDisconnect);
+    nextSocket.on("auth_expired", onAuthExpired);
 
     socketRef.current = nextSocket;
     setSocket(nextSocket);
@@ -92,6 +124,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
           nextSocket.off("connect", onConnect);
           nextSocket.off("connect_error", onConnectError);
           nextSocket.off("disconnect", onDisconnect);
+          nextSocket.off("auth_expired", onAuthExpired);
           nextSocket.disconnect();
           if (socketRef.current === nextSocket) {
             socketRef.current = null;
@@ -103,7 +136,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, user?.displayName]);
+  }, [user?.uid]);
 
   return (
     <SocketContext.Provider value={{ socket, connectionError }}>
