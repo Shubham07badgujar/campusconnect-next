@@ -25,15 +25,21 @@ jobs:
       - name: Install dependencies
         run: npm ci --include=dev
 
-      - name: Typecheck
-        run: npm run typecheck
-
+      # Fastest meaningful signal, and needs no Next.js codegen.
       - name: Tests
         run: npm test
 
-      # Runs last: it is the slowest step, and a type or test failure should
-      # report first. Credentials are deliberately absent — the build must stay
+      # Credentials are deliberately absent — the build must stay
       # credential-independent (firebase-admin initializes lazily at request
       # time), and this job proves that property on every push.
+      #
+      # It also has to run BEFORE the typecheck: `next-env.d.ts` is gitignored
+      # (Next.js's own default), so it does not exist on a fresh checkout, and
+      # it is what declares the image module types. Typechecking first fails
+      # with "Cannot find module '@/assets/…png'" on CI while passing locally,
+      # where a previous build left the file behind.
       - name: Build
         run: npm run build
+
+      - name: Typecheck
+        run: npm run typecheck
