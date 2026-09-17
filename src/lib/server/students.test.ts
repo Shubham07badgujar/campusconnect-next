@@ -182,6 +182,81 @@ describe("writeStudentProfile", () => {
     expect(writes[0].data.subjects.length).toBeGreaterThan(0);
     expect(writes[1].data.subjects.length).toBeGreaterThan(0);
     expect(writes[1].data.prn).toBe("CS201");
+    expect(writes[0].data.createdAt).toBeTruthy();
+  });
+
+  it("stamps updatedAt (not createdAt) in update mode", async () => {
+    const writes: { collection: string; data: any }[] = [];
+    const firestore = {
+      collection: (collection: string) => ({
+        doc: () => ({
+          set: async (data: any) => {
+            writes.push({ collection, data });
+          },
+        }),
+      }),
+    };
+
+    const built = buildStudentProfile(validInput, subjectSets);
+    if (!built.ok) throw new Error("expected ok");
+    await writeStudentProfile(firestore, built.profile, { mode: "update" });
+
+    // An edit must not reset the record's creation time.
+    expect(writes[0].data.createdAt).toBeUndefined();
+    expect(writes[0].data.updatedAt).toBeTruthy();
+    // Still both collections — an edit that touched only `users` is what let
+    // the two documents drift apart.
+    expect(writes.map((w) => w.collection)).toEqual(["users", "students"]);
+  });
+
+  it("merges, so fields the payload does not own survive an update", async () => {
+    const options: any[] = [];
+    const firestore = {
+      collection: () => ({
+        doc: () => ({
+          set: async (_data: any, opts?: any) => {
+            options.push(opts);
+          },
+        }),
+      }),
+    };
+
+    const built = buildStudentProfile(validInput, subjectSets);
+    if (!built.ok) throw new Error("expected ok");
+    await writeStudentProfile(firestore, built.profile, { mode: "update" });
+
+    expect(options.every((o) => o?.merge === true)).toBe(true);
+  });
+});
+
+describe("re-enrolment on edit", () => {
+  it("moving a student to another semester replaces their subjects", () => {
+    const before = buildStudentProfile(validInput, subjectSets);
+    const after = buildStudentProfile({ ...validInput, semester: "2" }, subjectSets);
+    if (!before.ok || !after.ok) throw new Error("expected ok");
+
+    // The defect: an edit used to leave the OLD subjects in place, so the
+    // student stayed matched to their previous class and missed the new one.
+    expect(before.profile.subjects).toEqual([
+      "Data Structures",
+      "Algorithms",
+      "Computer Networks",
+    ]);
+    expect(after.profile.subjects).toEqual([
+      "Database Systems",
+      "Software Engineering",
+    ]);
+
+    const sem2Session = {
+      branch: "Computer Engineering",
+      year: "2nd",
+      semester: "2",
+      subjectName: "Database Systems",
+      subjectId: makeSubjectId("Database Systems"),
+    };
+
+    expect(studentBelongsToSession(before.profile, sem2Session)).toBe(false);
+    expect(studentBelongsToSession(after.profile, sem2Session)).toBe(true);
   });
 });
 

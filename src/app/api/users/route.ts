@@ -143,3 +143,123 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+/**
+ * Update an existing student.
+ *
+ * This used to be a direct `updateDoc` from the admin screen, which wrote only
+ * `users/{uid}` and never recomputed `subjects`. Moving a student to another
+ * year therefore left them carrying their OLD year's subjects: excluded from
+ * their new class's attendance sessions while still matching the old one. It
+ * also never touched Firebase Auth, so editing the email diverged the login
+ * from the record and broke password reset.
+ *
+ * Routing edits through the server lets the same buildStudentProfile() that
+ * governs creation govern edits too, so the two cannot disagree.
+ */
+export async function PUT(req: NextRequest) {
+  const g = await requireAdmin(req);
+  if (g.ok === false) return g.response;
+
+  const body = await req.json().catch(() => ({}));
+  const { uid, name, email, rollNo, dept, year, semester, phone, contactEmail } =
+    body;
+
+  const targetUid = String(uid || "").trim();
+  if (!targetUid) {
+    return NextResponse.json({ message: "uid is required" }, { status: 400 });
+  }
+
+  try {
+    const firestore = adminApp.firestore();
+    const existingDoc = await firestore.collection("users").doc(targetUid).get();
+    if (!existingDoc.exists) {
+      return NextResponse.json({ message: "Student not found" }, { status: 404 });
+    }
+
+    const existing = (existingDoc.data() || {}) as Record<string, unknown>;
+    const subjectSets = await getSubjectSetsMap();
+
+    // Subjects are recomputed from the SUBMITTED branch/year/semester — that is
+    // the whole point of routing edits through here.
+    const built = buildStudentProfile(
+      {
+        uid: targetUid,
+        name,
+        email,
+        rollNo,
+        dept,
+        year,
+        semester,
+        // Fall back to stored values so an edit form that does not expose these
+        // fields cannot blank them.
+        phone: phone ?? existing.phone ?? existing.mobile,
+        contactEmail: contactEmail ?? existing.contactEmail,
+        onboardingSource: String(existing.onboardingSource || "admin_edit"),
+      },
+      subjectSets,
+    );
+
+    if (built.ok === false) {
+      return NextResponse.json(
+        { message: built.errors.join(" "), errors: built.errors },
+        { status: 400 },
+      );
+    }
+
+    // Keep the Auth account in step with the record. Without this a student
+    // would keep signing in with the old address while the profile showed the
+    // new one, and password reset (which reads the profile email) would target
+    // an account that does not exist.
+    const previousEmail = String(existing.email || "")
+      .trim()
+      .toLowerCase();
+    let emailChanged = false;
+
+    if (built.profile.email && built.profile.email !== previousEmail) {
+      try {
+        await adminApp.auth().updateUser(targetUid, {
+          email: built.profile.email,
+          displayName: built.profile.name,
+        });
+        emailChanged = true;
+      } catch (error) {
+        if ((error as { code?: string }).code === "auth/email-already-exists") {
+          return NextResponse.json(
+            { message: "That email is already used by another account." },
+            { status: 400 },
+          );
+        }
+        throw error;
+      }
+    } else {
+      await adminApp
+        .auth()
+        .updateUser(targetUid, { displayName: built.profile.name })
+        .catch(() => {
+          // A missing Auth user must not block the profile update — the record
+          // is still what the admin screens read.
+        });
+    }
+
+    await writeStudentProfile(firestore, built.profile, { mode: "update" });
+
+    return NextResponse.json(
+      {
+        message: emailChanged
+          ? "Student updated. Their sign-in email changed too."
+          : "Student updated.",
+        uid: targetUid,
+        subjects: built.profile.subjects,
+        emailChanged,
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Failed to update student:", error);
+    return NextResponse.json(
+      { message: "Failed to update student." },
+      { status: 500 },
+    );
+  }
+}

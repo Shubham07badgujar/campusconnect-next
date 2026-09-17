@@ -1,14 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  deleteDoc,
-  updateDoc,
-  getDoc,
-} from "firebase/firestore";
+import { collection, getDocs, doc, deleteDoc, getDoc } from "firebase/firestore";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
@@ -190,8 +182,10 @@ const UserManagement = () => {
       });
   };
 
-  const handleSubmit = async () => {
-    event.preventDefault();
+  const handleSubmit = async (event?: { preventDefault?: () => void }) => {
+    // Previously this called the deprecated global `window.event`, which is
+    // undefined outside Chrome's legacy behaviour.
+    event?.preventDefault?.();
     setError("");
     setSuccess("");
     setIsLoading(true);
@@ -213,28 +207,37 @@ const UserManagement = () => {
       }
 
       if (isEditing && editId) {
-        // Verify the document exists before updating
-        const userDocRef = doc(firestore, "users", editId);
-        const userDoc = await getDoc(userDocRef);
+        // Goes through the server so the student's subjects are recomputed for
+        // their (possibly changed) branch/year/semester, both the users and
+        // students documents stay in step, and the Firebase Auth account
+        // follows an email change. Editing Firestore directly from here used
+        // to leave a moved student carrying their previous year's subjects,
+        // silently excluding them from their new class's attendance.
+        const idToken = await auth.currentUser.getIdToken();
 
-        if (!userDoc.exists()) {
-          throw new Error("User not found in database");
-        }
-
-        // Update the document
-        await updateDoc(userDocRef, {
-          name: formData.name,
-          email: formData.email,
-          rollNo: formData.rollNo,
-          rollNumber: formData.rollNo,
-          role: formData.role,
-          dept: formData.dept,
-          year: formData.year,
-          semester: formData.semester,
-          updatedAt: new Date().toISOString(),
+        const response = await fetch("/api/users", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            uid: editId,
+            name: formData.name,
+            email: formData.email,
+            rollNo: formData.rollNo,
+            dept: formData.dept,
+            year: formData.year,
+            semester: formData.semester,
+          }),
         });
 
-        setSuccess("User updated successfully!");
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to update student.");
+        }
+
+        setSuccess(data.message || "User updated successfully!");
       } else {
         // Password is generated securely on the server and emailed to the student
         const idToken = await auth.currentUser.getIdToken();

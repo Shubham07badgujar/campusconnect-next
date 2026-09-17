@@ -174,10 +174,17 @@ export const writeStudentProfile = async (
     };
   },
   profile: StudentProfile,
-  createdAt: string = new Date().toISOString(),
+  options: { mode?: "create" | "update"; now?: string } = {},
 ): Promise<void> => {
-  const payload = { ...profile, createdAt };
-  await firestore.collection("users").doc(profile.uid).set(payload);
+  const mode = options.mode ?? "create";
+  const now = options.now ?? new Date().toISOString();
+  const payload =
+    mode === "create" ? { ...profile, createdAt: now } : { ...profile, updatedAt: now };
+
+  // Both writes merge: on create the documents are new so it is equivalent, and
+  // on update it protects fields this payload does not own (createdAt, photoURL,
+  // and anything a future field adds) from being silently dropped.
+  await firestore.collection("users").doc(profile.uid).set(payload, { merge: true });
   await firestore
     .collection("students")
     .doc(profile.uid)
