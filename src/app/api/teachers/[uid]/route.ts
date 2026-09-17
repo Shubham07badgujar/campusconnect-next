@@ -12,9 +12,9 @@ import {
   normalizeTeacherAssignments,
   getAssignmentSummaryFields,
   buildLegacyAssignedCourses,
-  generateTeacherId,
   syncTeacherStudentMappings,
 } from "@/lib/server/users";
+import { allocateFreeTeacherId } from "@/lib/server/teacher-ids";
 
 export const runtime = "nodejs";
 
@@ -96,10 +96,15 @@ export async function PUT(
     const previousProfile = normalizeJobProfile(
       existingTeacherData.jobProfile || "",
     );
+    // `previousProfile &&` matters: normalizeJobProfile returns "" for a blank
+    // or unrecognised stored profile, and without this guard "" !== jobProfile
+    // was true on every save — handing the teacher a new ID, and therefore a
+    // new sign-in address, every time they were edited.
     const shouldRegenerateId =
-      !existingTeacherData.employeeId || previousProfile !== jobProfile;
+      !existingTeacherData.employeeId ||
+      (previousProfile && previousProfile !== jobProfile);
     const employeeId = shouldRegenerateId
-      ? await generateTeacherId(firestore, jobProfile)
+      ? await allocateFreeTeacherId(firestore, jobProfile)
       : existingTeacherData.employeeId;
     const loginId = normalizeTeacherLoginId(employeeId);
     const authEmail = loginId;

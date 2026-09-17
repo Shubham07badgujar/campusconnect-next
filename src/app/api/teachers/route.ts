@@ -16,9 +16,9 @@ import {
   normalizeTeacherAssignments,
   getAssignmentSummaryFields,
   buildLegacyAssignedCourses,
-  generateTeacherId,
   syncTeacherStudentMappings,
 } from "@/lib/server/users";
+import { allocateFreeTeacherId } from "@/lib/server/teacher-ids";
 
 export const runtime = "nodejs";
 
@@ -91,34 +91,75 @@ export async function POST(req: NextRequest) {
     const shouldRegenerateId =
       !existingTeacherData.employeeId ||
       (previousProfile && previousProfile !== jobProfile);
-    const employeeId = shouldRegenerateId
-      ? await generateTeacherId(firestore, jobProfile)
-      : existingTeacherData.employeeId;
-    const loginId = normalizeTeacherLoginId(employeeId);
-    const authEmail = loginId;
 
-    try {
-      if (existingTeacherUid) {
-        user = await adminApp.auth().getUser(existingTeacherUid);
-      } else {
-        user = await adminApp.auth().getUserByEmail(authEmail);
-      }
+    let employeeId: string = existingTeacherData.employeeId;
+    let loginId = normalizeTeacherLoginId(employeeId);
+    let authEmail = loginId;
 
+    if (existingTeacherUid && !shouldRegenerateId) {
+      // Updating a teacher we have already identified by their contact email.
+      // Reusing their own account is exactly right here.
+      user = await adminApp.auth().getUser(existingTeacherUid);
       await adminApp.auth().updateUser(user.uid, {
         email: authEmail,
         password: generatedPassword,
         displayName: fullName,
       });
-    } catch (err) {
-      if ((err as { code?: string }).code === "auth/user-not-found") {
-        user = await adminApp.auth().createUser({
-          email: authEmail,
-          displayName: fullName,
-          password: generatedPassword,
-        });
-        isNewUser = true;
-      } else {
-        throw err;
+    } else if (existingTeacherUid) {
+      // Known teacher changing job profile, so their ID (and login) moves.
+      employeeId = await allocateFreeTeacherId(firestore, jobProfile);
+      loginId = normalizeTeacherLoginId(employeeId);
+      authEmail = loginId;
+
+      user = await adminApp.auth().getUser(existingTeacherUid);
+      await adminApp.auth().updateUser(user.uid, {
+        email: authEmail,
+        password: generatedPassword,
+        displayName: fullName,
+      });
+    } else {
+      // CREATING. The previous implementation called getUserByEmail() here and,
+      // on a hit, ran updateUser() on whatever account it found — resetting a
+      // different teacher's password and renaming their account. An existing
+      // account at this address is a COLLISION, never something to adopt.
+      //
+      // Firebase Auth's unique-email constraint is the authority: we allocate,
+      // attempt creation, and on a clash allocate the next id instead. With a
+      // monotonic counter this normally succeeds first time; the loop covers
+      // ids that predate the counter.
+      let created = false;
+      for (let attempt = 0; attempt < 5 && !created; attempt += 1) {
+        employeeId = await allocateFreeTeacherId(firestore, jobProfile);
+        loginId = normalizeTeacherLoginId(employeeId);
+        authEmail = loginId;
+
+        try {
+          user = await adminApp.auth().createUser({
+            email: authEmail,
+            displayName: fullName,
+            password: generatedPassword,
+          });
+          created = true;
+          isNewUser = true;
+        } catch (err) {
+          if ((err as { code?: string }).code !== "auth/email-already-exists") {
+            throw err;
+          }
+          // That login address is taken by an account we must not touch — most
+          // likely a teacher whose Firestore record was deleted while their
+          // sign-in survived. Move to the next id.
+        }
+      }
+
+      if (!created) {
+        return NextResponse.json(
+          {
+            message:
+              "Could not allocate a free teacher login. Some teacher accounts " +
+              "may exist in authentication without a matching record.",
+          },
+          { status: 409 },
+        );
       }
     }
 

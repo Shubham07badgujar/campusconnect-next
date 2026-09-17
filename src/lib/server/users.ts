@@ -154,40 +154,14 @@ export const getAssignmentSummaryFields = (
   };
 };
 
-export const generateTeacherId = async (
-  firestore: adminFirestore.Firestore,
-  jobProfile: unknown,
-): Promise<string> => {
-  const normalizedProfile = normalizeJobProfile(jobProfile);
-  const prefix = (JOB_PROFILE_CONFIG as Record<string, string>)[normalizedProfile];
-
-  if (!prefix) {
-    throw new Error("Invalid job profile for teacher ID generation.");
-  }
-
-  const snapshot = await firestore.collection("teachers").get();
-  let maxSequence = 0;
-
-  snapshot.docs.forEach((docSnap) => {
-    const teacherData = docSnap.data() as Record<string, unknown>;
-    const candidateId = String(
-      teacherData.teacherId || teacherData.employeeId || "",
-    ).trim();
-
-    if (!candidateId.startsWith(prefix)) {
-      return;
-    }
-
-    const sequencePart = candidateId.slice(prefix.length);
-    const parsedSequence = Number.parseInt(sequencePart, 10);
-    if (!Number.isNaN(parsedSequence)) {
-      maxSequence = Math.max(maxSequence, parsedSequence);
-    }
-  });
-
-  const nextSequence = String(maxSequence + 1).padStart(2, "0");
-  return `${prefix}${nextSequence}`;
-};
+// generateTeacherId() used to live here: a full-collection scan for the highest
+// sequence, plus one, with no transaction. Two concurrent creations derived the
+// same id, and deleting a teacher let the scan-derived maximum fall back so the
+// id was reissued. Both routes ended in an account takeover.
+//
+// It has been replaced by the transactional, monotonic allocator in
+// src/lib/server/teacher-ids.ts (allocateFreeTeacherId). It is deleted rather
+// than deprecated so the unsafe version cannot be picked up again by mistake.
 
 export const syncTeacherStudentMappings = async ({
   firestore,

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
@@ -348,14 +348,29 @@ const TeacherManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this teacher?")) {
+    if (
+      window.confirm(
+        "Delete this teacher? Their sign-in account and student mappings are removed too.",
+      )
+    ) {
       try {
-        const docRef = doc(firestore, "teachers", id);
-        await deleteDoc(docRef);
+        // Goes through the server: deleting the Firestore document here left
+        // the teacher's Firebase Auth account alive with its `teacher` claim
+        // intact, so a "deleted" teacher could still sign in.
+        const idToken = await auth.currentUser.getIdToken();
+        const response = await fetch(`/api/teachers/${id}/delete`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to delete teacher.");
+        }
 
         setTeachers((prev) => prev.filter((t) => t.id !== id));
         setFilteredTeachers((prev) => prev.filter((t) => t.id !== id));
-        setSuccess("Teacher deleted successfully!");
+        setSuccess(data.message || "Teacher deleted successfully!");
       } catch (error) {
         setError("Failed to delete teacher: " + error.message);
       }
