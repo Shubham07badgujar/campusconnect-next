@@ -412,8 +412,9 @@ function StudentDashboard() {
       assignedSubjects: any,
     ) => {
       try {
+        // The student-visible projection; `teachers` itself is staff-only.
         const teacherSnapshot = await getDocs(
-          collection(firestore, "teachers"),
+          collection(firestore, "teacherDirectory"),
         );
         const nextMap: any = {};
 

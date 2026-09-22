@@ -648,7 +648,9 @@ function Chats() {
 
         try {
           // Get teacher details from Firestore
-          const teacherDocRef = doc(firestore, "teachers", teacherId);
+          // This branch is the STUDENT side of the chat, so it reads the
+          // public directory entry rather than the staff record.
+          const teacherDocRef = doc(firestore, "teacherDirectory", teacherId);
           const teacherDoc = await getDoc(teacherDocRef);
 
           if (!teacherDoc.exists()) {

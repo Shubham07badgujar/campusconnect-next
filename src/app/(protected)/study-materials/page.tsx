@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   collection,
   getDocs,
+  getDoc,
   query,
   where,
   addDoc,
@@ -53,32 +54,23 @@ const StudyMaterials = () => {
     const getUserInfo = async () => {
       if (user) {
         try {
-          // Check if user is a teacher
-          const teacherQuery = query(
-            collection(db, "teachers"),
-            where("uid", "==", user.uid),
-          );
-          const teacherSnapshot = await getDocs(teacherQuery);
-          const isUserTeacher = !teacherSnapshot.empty;
+          // Read our OWN profile document, by id. Both collections are
+          // readable by the person they describe (and by staff), but the
+          // where("uid", "==", ...) scan this used to do is not something the
+          // rules can authorise — it threw for every student, which also
+          // skipped the fetchBranches() call below and left the branch filter
+          // permanently empty for them.
+          const teacherDoc = await getDoc(doc(db, "teachers", user.uid));
+          const isUserTeacher = teacherDoc.exists();
           setIsTeacher(isUserTeacher);
 
-          if (isUserTeacher) {
-            const teacherData = teacherSnapshot.docs[0].data();
-            setUserDepartment(teacherData.department || "");
-            setSelectedBranch(teacherData.department || "");
-          } else {
-            // Get student department
-            const studentQuery = query(
-              collection(db, "students"),
-              where("uid", "==", user.uid),
-            );
-            const studentSnapshot = await getDocs(studentQuery);
-            if (!studentSnapshot.empty) {
-              const studentData = studentSnapshot.docs[0].data();
-              setUserDepartment(studentData.department || "");
-              setSelectedBranch(studentData.department || "");
-            }
-          }
+          const profileSnap = isUserTeacher
+            ? teacherDoc
+            : await getDoc(doc(db, "students", user.uid));
+          const profile: any = profileSnap.exists() ? profileSnap.data() : {};
+          const department = profile.department || profile.dept || "";
+          setUserDepartment(department);
+          setSelectedBranch(department);
 
           // Fetch branches
           await fetchBranches();

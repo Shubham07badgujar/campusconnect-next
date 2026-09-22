@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import adminApp from "@/lib/server/firebase-admin";
 import { requireAdmin } from "@/lib/server/auth-guards";
+import { deleteTeacherDirectory } from "@/lib/server/teacher-directory";
 
 export const runtime = "nodejs";
 
@@ -75,6 +76,9 @@ export async function DELETE(
 
     // 3. The profile.
     await firestore.collection("teachers").doc(uid).delete();
+
+    // And stop listing them in the student-visible directory.
+    await deleteTeacherDirectory(firestore, uid);
 
     // 4. Finally the account itself.
     try {

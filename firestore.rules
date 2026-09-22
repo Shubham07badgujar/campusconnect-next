@@ -80,9 +80,25 @@ service cloud.firestore {
     }
 
     match /teachers/{uid} {
-      // Students browse teachers (chat, courses); management is admin-only
-      allow read: if isSignedIn();
+      // Staff or the teacher themselves. These documents carry the teacher's
+      // mobile number and their loginId / authEmail — the sign-in identifier —
+      // so they are not campus-wide readable.
+      //
+      // Students still need the staff directory (to start a chat, and to see
+      // who teaches a subject). Firestore has no field-level read rules, so
+      // that is served by the `teacherDirectory` projection below rather than
+      // by opening this collection up.
+      allow read: if isStaff() || isSelf(uid);
       allow write: if isAdmin();
+    }
+
+    // Student-visible projection of `teachers`: name, photo, institutional
+    // email, department, teacher ID and subject assignments — no mobile
+    // number and no login identifier. Written only by the server, which keeps
+    // it in step whenever a teacher is created, updated or deleted.
+    match /teacherDirectory/{uid} {
+      allow read: if isSignedIn();
+      allow write: if false;
     }
 
     match /admins/{uid} {

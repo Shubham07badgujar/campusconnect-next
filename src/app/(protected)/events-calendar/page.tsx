@@ -70,36 +70,25 @@ function EventsCalendar() {
           const tokenResult = await user.getIdTokenResult(true);
           const claims = tokenResult?.claims || {};
 
+          // The custom claims on the token are the authority — they are what
+          // firestore.rules and the API guards actually check. The profile
+          // documents are only a fallback for accounts provisioned before the
+          // claim was set, and they are read BY ID: a
+          // where("uid", "==", ...) scan of `admins` / `teachers` is not
+          // something the rules can authorise, so it threw for every student
+          // and dropped them out of this whole block via the catch below.
           let adminAllowed = Boolean(claims.admin);
           if (!adminAllowed) {
             const adminDoc = await getDoc(doc(firestore, "admins", user.uid));
-            if (adminDoc.exists()) {
-              adminAllowed = true;
-            } else {
-              const adminQuery = query(
-                collection(firestore, "admins"),
-                where("uid", "==", user.uid),
-              );
-              const adminSnapshot = await getDocs(adminQuery);
-              adminAllowed = !adminSnapshot.empty;
-            }
+            adminAllowed = adminDoc.exists();
           }
 
           let teacherAllowed = Boolean(claims.teacher);
-          if (!teacherAllowed) {
+          if (!teacherAllowed && !adminAllowed) {
             const teacherDoc = await getDoc(
               doc(firestore, "teachers", user.uid),
             );
-            if (teacherDoc.exists()) {
-              teacherAllowed = true;
-            } else {
-              const teacherQuery = query(
-                collection(firestore, "teachers"),
-                where("uid", "==", user.uid),
-              );
-              const teacherSnapshot = await getDocs(teacherQuery);
-              teacherAllowed = !teacherSnapshot.empty;
-            }
+            teacherAllowed = teacherDoc.exists();
           }
 
           setIsAdmin(adminAllowed);

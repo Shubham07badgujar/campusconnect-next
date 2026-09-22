@@ -73,7 +73,18 @@ beforeEach(async () => {
       mobile: "9800000001",
       contactEmail: "teacher@example.com",
       authEmail: "pm01@campusconnect.teacher",
+      loginId: "pm01@campusconnect.teacher",
       dept: "Computer Engineering",
+    });
+    // The server-written projection of the record above. Students read this
+    // instead of `teachers`; see src/lib/server/teacher-directory.ts.
+    await setDoc(doc(db, "teacherDirectory", TEACHER), {
+      uid: TEACHER,
+      name: "Teacher One",
+      email: "teacher@example.com",
+      dept: "Computer Engineering",
+      department: "Computer Engineering",
+      teacherId: "PM01",
     });
     await setDoc(doc(db, "chats", "chat-1"), {
       studentId: STUDENT_A,
@@ -144,6 +155,59 @@ describe("users — personal data is not campus-wide", () => {
     await assertFails(
       updateDoc(doc(asStudentA(), "users", STUDENT_A), { year: "4th" }),
     );
+  });
+});
+
+// -------------------------------------------------------------- teachers
+
+describe("teachers — staff records are not campus-wide", () => {
+  it("stops a student reading a teacher's record", async () => {
+    // These documents hold the teacher's mobile number and their
+    // loginId/authEmail, which is the sign-in identifier.
+    await assertFails(getDoc(doc(asStudentA(), "teachers", TEACHER)));
+  });
+
+  it("stops a student listing the staff collection", async () => {
+    await assertFails(getDocs(collection(asStudentA(), "teachers")));
+  });
+
+  it("lets staff read it, and a teacher read their own", async () => {
+    await assertSucceeds(getDoc(doc(asAdmin(), "teachers", TEACHER)));
+    await assertSucceeds(getDoc(doc(asTeacher(), "teachers", TEACHER)));
+  });
+});
+
+describe("teacherDirectory — the safe projection students actually use", () => {
+  it("lets a student read and list it", async () => {
+    await assertSucceeds(getDoc(doc(asStudentA(), "teacherDirectory", TEACHER)));
+    await assertSucceeds(getDocs(collection(asStudentA(), "teacherDirectory")));
+  });
+
+  it("carries no mobile number and no sign-in identifier", async () => {
+    const snap = await getDoc(doc(asStudentA(), "teacherDirectory", TEACHER));
+    const data = snap.data() || {};
+    // The whole point of the projection.
+    expect(data.mobile).toBeUndefined();
+    expect(data.phone).toBeUndefined();
+    expect(data.authEmail).toBeUndefined();
+    expect(data.loginId).toBeUndefined();
+    // …while still carrying what the directory and dashboard render.
+    expect(data.name).toBe("Teacher One");
+    expect(data.dept).toBe("Computer Engineering");
+  });
+
+  it("is not writable by anyone from the browser, not even an admin", async () => {
+    // Derived data: the server owns it.
+    await assertFails(
+      setDoc(doc(asStudentA(), "teacherDirectory", TEACHER), { name: "hacked" }),
+    );
+    await assertFails(
+      setDoc(doc(asAdmin(), "teacherDirectory", TEACHER), { name: "hacked" }),
+    );
+  });
+
+  it("is closed to unauthenticated readers", async () => {
+    await assertFails(getDoc(doc(asAnon(), "teacherDirectory", TEACHER)));
   });
 });
 

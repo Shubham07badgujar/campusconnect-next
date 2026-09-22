@@ -19,6 +19,7 @@ import {
   syncTeacherStudentMappings,
 } from "@/lib/server/users";
 import { allocateFreeTeacherId } from "@/lib/server/teacher-ids";
+import { writeTeacherDirectory } from "@/lib/server/teacher-directory";
 
 export const runtime = "nodejs";
 
@@ -191,6 +192,10 @@ export async function POST(req: NextRequest) {
     await firestore.collection("teachers").doc(user.uid).set(teacherPayload, {
       merge: true,
     });
+
+    // Publish the student-visible projection. `teachers` itself is staff-only,
+    // because it carries mobile numbers and the sign-in identifier.
+    await writeTeacherDirectory(firestore, user.uid, teacherPayload);
 
     await syncTeacherStudentMappings({
       firestore,

@@ -15,6 +15,7 @@ import {
   syncTeacherStudentMappings,
 } from "@/lib/server/users";
 import { allocateFreeTeacherId } from "@/lib/server/teacher-ids";
+import { writeTeacherDirectory } from "@/lib/server/teacher-directory";
 
 export const runtime = "nodejs";
 
@@ -132,6 +133,12 @@ export async function PUT(
     };
 
     await teacherDocRef.set(updatePayload, { merge: true });
+
+    // Keep the student-visible projection in step with the record.
+    await writeTeacherDirectory(firestore, uid, {
+      ...existingTeacherData,
+      ...updatePayload,
+    });
 
     await syncTeacherStudentMappings({
       firestore,

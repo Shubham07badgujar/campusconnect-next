@@ -68,8 +68,11 @@ function Discussions() {
   const fetchTeachersByBranch = async (branch: any) => {
     setLoading(true);
     try {
+      // `teacherDirectory`, not `teachers`: the staff records carry mobile
+      // numbers and the login identifier, so students read the projection that
+      // holds only directory fields. See src/lib/server/teacher-directory.ts.
       const teachersQuery = query(
-        collection(firestore, "teachers"),
+        collection(firestore, "teacherDirectory"),
         where("dept", "==", branch),
       );
       const snapshot = await getDocs(teachersQuery);
