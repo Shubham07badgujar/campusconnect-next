@@ -26,13 +26,16 @@ import {
 const NotificationsModal = ({ isOpen, onClose }: any) => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [selectedTab, setSelectedTab] = useState("all");
   useEffect(() => {
     if (!isOpen) return;
 
-    // Get active announcements, ordered by most recent first
+    setLoadError("");
+
+    // Active announcements, most recent first. Served by the composite index
+    // announcements (active ASC, createdAt DESC) in firestore.indexes.json.
     try {
-      // Try the query with ordering that requires the composite index
       const q = query(
         collection(firestore, "announcements"),
         where("active", "==", true),
@@ -52,40 +55,10 @@ const NotificationsModal = ({ isOpen, onClose }: any) => {
           setLoading(false);
         },
         (error) => {
+          // A failure is shown as a failure, not as "No notifications".
           console.error("Error fetching announcements:", error);
-
-          // If composite index error occurs, fall back to a simpler query
-          console.log(
-            "Falling back to simple query. Please create the required index in Firebase console."
-          );
-          const simpleQuery = query(
-            collection(firestore, "announcements"),
-            where("active", "==", true)
-          );
-
-          const fallbackUnsubscribe = onSnapshot(simpleQuery, (snapshot) => {
-            // Sort manually (not as efficient but works without the index)
-            const announcementsList = snapshot.docs
-              .map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-                isRead:
-                  doc.data().readBy?.includes(auth.currentUser?.uid) || false,
-              }))
-              .sort((a: any, b: any) => {
-                // Sort by createdAt in descending order if available
-                if (a.createdAt && b.createdAt) {
-                  return b.createdAt.seconds - a.createdAt.seconds;
-                }
-                return 0;
-              })
-              .slice(0, 20); // Apply limit manually
-
-            setAnnouncements(announcementsList);
-            setLoading(false);
-          });
-
-          return fallbackUnsubscribe;
+          setLoadError("Couldn't load notifications. Please try again.");
+          setLoading(false);
         }
       );
 
@@ -264,6 +237,16 @@ const NotificationsModal = ({ isOpen, onClose }: any) => {
               {loading ? (
                 <div className="flex items-center justify-center p-8">
                   <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                </div>
+              ) : loadError ? (
+                <div className="text-center py-12 px-4">
+                  <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">
+                    <FiAlertCircle className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="mt-2 text-lg font-medium text-gray-900">
+                    Notifications unavailable
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">{loadError}</p>
                 </div>
               ) : filteredAnnouncements.length === 0 ? (
                 <div className="text-center py-12 px-4">

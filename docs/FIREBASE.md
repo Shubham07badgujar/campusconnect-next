@@ -80,8 +80,14 @@ Firestore refuses:
 | `studyMaterials` | `department ==` + `orderBy createdAt desc` | study materials list |
 | `studyMaterials` | `department ==`, `subject ==` + `orderBy createdAt desc` | study materials, filtered |
 
-Those four are now declared in `firestore.indexes.json` and are **waiting to be
-deployed.**
+Those four are declared in `firestore.indexes.json` and were **deployed on
+2026-09-22**, together with the rules. All four reached `READY` about five
+minutes later. They were then verified in production by signing in as a real
+student and a real teacher and running the app's own queries through the
+security rules: notifications return newest first, chat history returns
+messages in order for both participants (and is denied to anyone else), and
+both study-material queries return exactly the right documents in the right
+order.
 
 Note that the three-field `studyMaterials` index does *not* cover the two-field
 one: Firestore matches an index by prefix, and `subject` sits between
@@ -91,10 +97,11 @@ one: Firestore matches an index by prefix, and `subject` sits between
 
 Because every one of those call sites hides the failure:
 
-- `NotificationsModal.tsx` catches it and runs a simpler query, then sorts in
-  JavaScript. Its own comment reads *"Falling back to simple query. Please
-  create the required index in Firebase console."* — so notifications have
-  always run the fallback path.
+- `NotificationsModal.tsx` caught it and ran a simpler query, then sorted in
+  JavaScript, with a comment asking for the index to be created in the
+  console — so notifications always ran the fallback path. That fallback was
+  removed once the index was live. It also had a bug: its listener was never
+  unsubscribed. A failure now shows as an error, not as "No notifications".
 - Both study-material screens catch it and render an **empty list** with a
   generic "Failed to load" toast.
 - `Chats.tsx:927` has no error handler at all.
