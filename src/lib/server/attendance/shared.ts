@@ -8,6 +8,7 @@ import {
   normalizeSemester,
   normalizeYear,
 } from "@/lib/server/constants";
+import { logger, reportError } from "@/lib/server/logger";
 
 type AnyRecord = Record<string, any>;
 
@@ -164,7 +165,34 @@ export const getSessionEnrolledStudents = async (
         }
 
         return await queryRef.get();
-      } catch {
+      } catch (error) {
+        // This used to be a bare `catch { return null }`. When every scoped
+        // query returns null the code below reads the ENTIRE students
+        // collection plus every student in `users` — so a failure here does
+        // not surface as an error, it surfaces as attendance getting slower
+        // and the Firestore bill getting larger. Whatever went wrong has to
+        // be visible.
+        //
+        // FAILED_PRECONDITION specifically means a missing composite index,
+        // which is the failure this fallback was quietly hiding.
+        const code = (error as { code?: unknown }).code;
+        const missingIndex =
+          code === 9 || /requires an index/i.test(String((error as Error)?.message));
+
+        reportError(
+          missingIndex
+            ? "Attendance roster query needs a Firestore index; falling back to a full scan"
+            : "Attendance roster query failed; falling back to a full scan",
+          error,
+          {
+            event: missingIndex
+              ? "attendance.roster.missingIndex"
+              : "attendance.roster.queryFailed",
+            collection,
+            branchField,
+            role,
+          },
+        );
         return null;
       }
     });
@@ -181,6 +209,17 @@ export const getSessionEnrolledStudents = async (
   }
 
   if (merged.size === 0) {
+    // Reading every student in the institution. Correct as a last resort, but
+    // it must never be the silent normal case — say so, with the class that
+    // produced no scoped match.
+    logger.warn("Attendance roster falling back to a full collection scan", {
+      event: "attendance.roster.fullScan",
+      branch,
+      year,
+      semester,
+      scopedQueriesThatSucceeded: classScopedSnapshots.length,
+    });
+
     const [usersSnapshot, studentsSnapshot] = await Promise.all([
       firestore.collection("users").where("role", "==", "Student").get(),
       firestore.collection("students").get(),
