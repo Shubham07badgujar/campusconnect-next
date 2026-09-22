@@ -56,7 +56,14 @@ service cloud.firestore {
 
     // ---------- identity & profiles ----------
     match /users/{uid} {
-      allow read: if isSignedIn();
+      // Staff, or the person themselves — NOT every signed-in account.
+      //
+      // `users` mirrors the full student record (name, email, phone, roll
+      // number), so `if isSignedIn()` let any single student read the entire
+      // student body, and silently nullified the stricter rule on `students`
+      // below. Staff keep full read access because the admin and teacher
+      // screens legitimately list users.
+      allow read: if isStaff() || isSelf(uid);
       allow create: if isAdmin();
       // Self-service profile edits may not touch role/academic identity fields
       allow update: if isAdmin() ||

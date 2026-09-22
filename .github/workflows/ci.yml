@@ -29,6 +29,13 @@ jobs:
       - name: Tests
         run: npm test
 
+      # For every screen that reads Firestore straight from the browser,
+      # firestore.rules is the only access control there is — so it gets the
+      # same gate as the code. emulators:exec starts the emulator, runs the
+      # suite against the real rules file, and tears it down.
+      - name: Firestore rules tests
+        run: npm run test:rules
+
       # Credentials are deliberately absent — the build must stay
       # credential-independent (firebase-admin initializes lazily at request
       # time), and this job proves that property on every push.

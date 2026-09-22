@@ -318,13 +318,13 @@ function StudentDashboard() {
         if (userDocSnap.exists()) {
           studentData = userDocSnap.data();
         } else {
-          const q = query(
-            collection(firestore, "users"),
-            where("uid", "==", user.uid),
-          );
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-            studentData = querySnapshot.docs[0].data();
+          // Fall back to the student's own `students` document rather than
+          // querying the users collection. Both write paths key these documents
+          // by uid, so a direct read finds the same record — and a student may
+          // only read their own, so a collection query would now be denied.
+          const studentDocSnap = await getDoc(doc(firestore, "students", user.uid));
+          if (studentDocSnap.exists()) {
+            studentData = studentDocSnap.data();
           }
         }
 
