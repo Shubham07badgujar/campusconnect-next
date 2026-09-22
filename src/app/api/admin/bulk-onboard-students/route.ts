@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
             });
             credentialsSentCount += 1;
           } catch (mailError: any) {
-            reportError("Credential email failed", mailError.message, {
+            reportError("Credential email failed", mailError, {
               route: "/api/admin/bulk-onboard-students",
             });
             manualCredentialEntries.push({

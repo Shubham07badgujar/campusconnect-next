@@ -156,7 +156,7 @@ export async function PUT(
       });
       await adminApp.auth().setCustomUserClaims(uid, { teacher: true });
     } catch (authError) {
-      reportError("Teacher auth update warning", (authError as Error).message, {
+      reportError("Teacher auth update warning", authError, {
         route: "/api/teachers/[uid]",
       });
     }
