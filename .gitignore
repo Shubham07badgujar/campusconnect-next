@@ -16,3 +16,8 @@ rotated-credentials-*.csv
 # logs / os
 *.log
 .DS_Store
+
+# database backups — these hold student PII and, if any student has registered
+# a face, biometric templates. Never commit them; see docs/BACKUPS.md.
+backups/
+*.backup.json

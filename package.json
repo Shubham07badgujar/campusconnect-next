@@ -11,7 +11,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --exclude \"**/firestore.rules.test.ts\"",
     "test:watch": "vitest",
-    "test:rules": "firebase emulators:exec --only firestore --project campusconnect-rules-test \"vitest run src/firestore.rules.test.ts\""
+    "test:rules": "firebase emulators:exec --only firestore --project campusconnect-rules-test \"vitest run src/firestore.rules.test.ts\"",
+    "backup": "tsx scripts/backupFirestore.ts --include-auth",
+    "restore": "tsx scripts/restoreFirestore.ts",
+    "verify:backup": "firebase emulators:exec --only firestore --project campusconnect-restore-test \"tsx scripts/restoreFirestore.ts --emulator && tsx scripts/verifyRestore.ts --emulator\""
   },
   "engines": {
     "node": ">=20.6"
