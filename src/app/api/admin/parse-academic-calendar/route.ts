@@ -17,6 +17,7 @@ import {
   getGeminiApiKeyFromRequest,
   parseAcademicCalendarWithGemini,
 } from "@/lib/server/gemini";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -75,10 +76,11 @@ export async function POST(req: NextRequest) {
         holidayEntries = geminiStructured.holidayEntries;
         structuredBy = "gemini";
       } catch (geminiError) {
-        console.error(
-          "Gemini academic calendar parsing failed:",
-          geminiError,
-        );
+        reportError("Gemini academic calendar parsing failed", geminiError, {
+          route: "/api/admin/parse-academic-calendar",
+          // Not fatal: the text/CSV parser below is the fallback.
+          degraded: true,
+        });
       }
     }
 

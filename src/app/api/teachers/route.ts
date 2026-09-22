@@ -20,6 +20,7 @@ import {
 } from "@/lib/server/users";
 import { allocateFreeTeacherId } from "@/lib/server/teacher-ids";
 import { writeTeacherDirectory } from "@/lib/server/teacher-directory";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -246,7 +247,7 @@ Please log in and change your password after first login.
       { status: 200 },
     );
   } catch (error) {
-    console.error("Error creating teacher:", error);
+    reportError("Error creating teacher", error, { route: "/api/teachers" });
     return NextResponse.json(
       { message: (error as Error).message },
       { status: 500 },

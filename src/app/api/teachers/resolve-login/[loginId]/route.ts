@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import adminApp from "@/lib/server/firebase-admin";
 import { normalizeEmail } from "@/lib/server/utils";
 import { findTeacherByLoginIdentifier } from "@/lib/server/users";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -52,7 +53,9 @@ export async function GET(
       { status: 200 },
     );
   } catch (error) {
-    console.error("Error resolving teacher login:", error);
+    reportError("Error resolving teacher login", error, {
+      route: "/api/teachers/resolve-login/[loginId]",
+    });
     return NextResponse.json(
       { message: (error as Error).message },
       { status: 500 },

@@ -5,6 +5,7 @@ import {
   isAllowedByLegacyUploadFilter,
   LEGACY_UPLOAD_FILTER_ERROR_MESSAGE,
 } from "@/lib/server/file-text";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
       resourceType: uploadResult.resource_type,
     });
   } catch (error: any) {
-    console.error("Upload error:", error);
+    reportError("Upload error", error, { route: "/api/upload-material" });
     return NextResponse.json(
       {
         message: "Failed to upload file",

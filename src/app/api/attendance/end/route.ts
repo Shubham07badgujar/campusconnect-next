@@ -7,6 +7,7 @@ import {
   clearAttendanceSessionJoinMap,
   getIO,
 } from "@/lib/server/socket-io";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -220,7 +221,9 @@ export async function POST(req: NextRequest) {
         { merge: true },
       );
     })().catch((error) => {
-      console.error("Deferred attendance rollup failed:", error);
+      reportError("Deferred attendance rollup failed", error, {
+        route: "/api/attendance/end",
+      });
     });
 
     return NextResponse.json(

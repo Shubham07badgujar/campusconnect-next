@@ -7,9 +7,16 @@ import { setIO } from "./src/lib/server/socket-io";
 import { registerSocketHandlers } from "./src/server/socket";
 import { startExamReminderScheduler } from "./src/lib/server/exam-reminders";
 import { startKeepAliveScheduler } from "./src/lib/server/keep-alive";
+import { logger, reportError, newRequestId } from "./src/lib/server/logger";
+import { installProcessErrorHandlers } from "./src/lib/server/process-errors";
 
 const dev = process.env.NODE_ENV !== "production";
 const port = Number(process.env.PORT) || 3000;
+
+// Installed before anything else can throw. Next's instrumentation hook does
+// this too, but that runs inside app.prepare() -- a failure before then would
+// otherwise still be a silent exit.
+installProcessErrorHandlers();
 
 const app = next({ dev });
 const handle = app.getRequestHandler();
@@ -19,7 +26,12 @@ app
   .then(() => {
     const httpServer = createServer((req, res) => {
       handle(req, res).catch((error) => {
-        console.error("Request handling error:", error);
+        reportError("Request handling error", error, {
+          event: "request.unhandled",
+          requestId: newRequestId(),
+          route: req.url,
+          method: req.method,
+        });
         if (!res.headersSent) {
           res.statusCode = 500;
           res.end("Internal Server Error");
@@ -45,16 +57,23 @@ app
     ) {
       startExamReminderScheduler();
     } else {
-      console.log("Exam reminder scheduler disabled by configuration.");
+      logger.info("Exam reminder scheduler disabled by configuration", {
+        event: "scheduler.disabled",
+        scheduler: "exam-reminders",
+      });
     }
 
     startKeepAliveScheduler();
 
     httpServer.listen(port, "0.0.0.0", () => {
-      console.log(`✅ CampusConnect ready on http://localhost:${port} (dev=${dev})`);
+      logger.info("CampusConnect ready", {
+        event: "server.ready",
+        port,
+        dev,
+      });
     });
   })
   .catch((error) => {
-    console.error("Failed to start server:", error);
+    reportError("Failed to start server", error, { event: "server.startFailed" });
     process.exit(1);
   });

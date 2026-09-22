@@ -13,6 +13,7 @@ import {
   maskEmailAddress,
   resolveLoginIdentityForPasswordReset,
 } from "@/lib/server/otp";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -122,7 +123,9 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Password OTP verify error:", error);
+    reportError("Password OTP verify error", error, {
+      route: "/api/auth/password-otp/verify",
+    });
     return NextResponse.json(
       { message: (error as Error).message },
       { status: 500 },

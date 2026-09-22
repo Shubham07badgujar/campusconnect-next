@@ -6,6 +6,7 @@ import {
   getExamTimeStartMinutes,
   parseExamTimetableDate,
 } from "@/lib/server/exam-timetable";
+import { logger, reportError } from "./logger";
 
 const DEFAULT_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const SCHEDULER_KEY = Symbol.for("campusconnect.exam-reminder-scheduler");
@@ -279,13 +280,17 @@ export async function runExamReminderJob(): Promise<{ created: number }> {
   try {
     const result = await createTomorrowExamReminderAnnouncements();
     if ((result?.createdCount || 0) > 0) {
-      console.log(
-        `Exam reminder job: created ${result.createdCount} reminder announcement(s) for ${result.reminderDateISO || "tomorrow"}`,
-      );
+      logger.info("Exam reminder announcements created", {
+        event: "examReminders.created",
+        count: result.createdCount,
+        reminderDate: result.reminderDateISO || "tomorrow",
+      });
     }
     return { created: result?.createdCount || 0 };
   } catch (error) {
-    console.error("Exam reminder job failed:", (error as Error).message);
+    reportError("Exam reminder job failed", error, {
+      event: "examReminders.failed",
+    });
     return { created: 0 };
   } finally {
     examReminderJobRunning = false;
@@ -303,11 +308,17 @@ export function startExamReminderScheduler(): void {
 
   const timer = setInterval(() => {
     runExamReminderJob().catch((error) =>
-      console.error("[exam-reminders] job failed:", (error as Error).message),
+      reportError("Exam reminder job failed", error, {
+        event: "examReminders.failed",
+      }),
     );
   }, intervalMs);
   timer.unref();
 
   globalStore[SCHEDULER_KEY] = timer;
-  console.log(`[exam-reminders] scheduler started (every ${intervalMs} ms)`);
+  logger.info("Exam reminder scheduler started", {
+    event: "scheduler.started",
+    scheduler: "exam-reminders",
+    intervalMs,
+  });
 }

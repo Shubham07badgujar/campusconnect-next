@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import adminApp from "@/lib/server/firebase-admin";
 import { requireAdmin } from "@/lib/server/auth-guards";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -63,7 +64,9 @@ export async function DELETE(req: NextRequest) {
       deletedCount: deletedCount,
     });
   } catch (error: any) {
-    console.error("Remove duplicates error:", error);
+    reportError("Remove duplicates error", error, {
+      route: "/api/remove-duplicate-exams",
+    });
     return NextResponse.json(
       {
         message: "Failed to remove duplicates",

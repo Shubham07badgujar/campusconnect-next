@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireTeacherOrAdmin } from "@/lib/server/auth-guards";
 import { deleteMaterialAsset } from "@/lib/server/cloudinary";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -33,7 +34,7 @@ export async function DELETE(
       result: outcome.result,
     });
   } catch (error: any) {
-    console.error("Delete error:", error);
+    reportError("Delete error", error, { route: "/api/delete-material/[...publicId]" });
     return NextResponse.json(
       {
         message: "Failed to delete file",

@@ -8,6 +8,7 @@ import {
   buildPasswordResetTokenHash,
   resolveLoginIdentityForPasswordReset,
 } from "@/lib/server/otp";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -92,7 +93,9 @@ export async function POST(req: NextRequest) {
           text: `Hi ${identity.displayName || "there"},\n\nYour CampusConnect password was changed successfully.\nIf this was not you, contact your administrator immediately.\n\n- CampusConnect Team`,
         });
       } catch (mailError) {
-        console.error("Password reset confirmation email failed:", mailError);
+        reportError("Password reset confirmation email failed", mailError, {
+          route: "/api/auth/password-otp/reset",
+        });
       }
     }
 
@@ -104,7 +107,9 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Password reset error:", error);
+    reportError("Password reset error", error, {
+      route: "/api/auth/password-otp/reset",
+    });
     return NextResponse.json(
       { message: (error as Error).message },
       { status: 500 },

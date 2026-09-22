@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import admin from "firebase-admin";
+import { logger, reportError } from "./logger";
 
 // Credential source is resolved in this order, regardless of NODE_ENV:
 //   1. FIREBASE_SERVICE_ACCOUNT_BASE64  (recommended for cloud hosts like Render)
@@ -22,13 +23,16 @@ function loadServiceAccount(): ServiceAccountJson {
         "base64",
       ).toString("utf8");
       const parsed = JSON.parse(jsonString) as ServiceAccountJson;
-      console.log("✅ Using Firebase service account from Base64 environment variable");
+      logger.info("Firebase service account loaded", {
+        event: "firebaseAdmin.credentialLoaded",
+        source: "FIREBASE_SERVICE_ACCOUNT_BASE64",
+      });
       return parsed;
     } catch (error) {
-      console.error(
-        "❌ Error parsing Base64 Firebase service account:",
-        (error as Error).message,
-      );
+      reportError("Error parsing Base64 Firebase service account", error, {
+        event: "firebaseAdmin.credentialInvalid",
+        source: "FIREBASE_SERVICE_ACCOUNT_BASE64",
+      });
       throw new Error(
         "Invalid FIREBASE_SERVICE_ACCOUNT_BASE64 environment variable. Please check the Base64 encoding.",
       );
@@ -40,22 +44,26 @@ function loadServiceAccount(): ServiceAccountJson {
     try {
       const jsonString = process.env.FIREBASE_SERVICE_ACCOUNT_JSON.replace(/\\n/g, "\n");
       const parsed = JSON.parse(jsonString) as ServiceAccountJson;
-      console.log("✅ Using Firebase service account from JSON environment variable");
+      logger.info("Firebase service account loaded", {
+        event: "firebaseAdmin.credentialLoaded",
+        source: "FIREBASE_SERVICE_ACCOUNT_JSON",
+      });
       return parsed;
     } catch {
       try {
         const parsed = JSON.parse(
           process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
         ) as ServiceAccountJson;
-        console.log(
-          "✅ Using Firebase service account from JSON environment variable (fallback parsing)",
-        );
+        logger.info("Firebase service account loaded (fallback parsing)", {
+          event: "firebaseAdmin.credentialLoaded",
+          source: "FIREBASE_SERVICE_ACCOUNT_JSON",
+        });
         return parsed;
       } catch (fallbackError) {
-        console.error(
-          "❌ Error parsing Firebase service account JSON:",
-          (fallbackError as Error).message,
-        );
+        reportError("Error parsing Firebase service account JSON", fallbackError, {
+          event: "firebaseAdmin.credentialInvalid",
+          source: "FIREBASE_SERVICE_ACCOUNT_JSON",
+        });
         throw new Error(
           "Invalid FIREBASE_SERVICE_ACCOUNT_JSON environment variable. Please check the JSON formatting.",
         );
@@ -69,13 +77,15 @@ function loadServiceAccount(): ServiceAccountJson {
   );
   try {
     const parsed = JSON.parse(fs.readFileSync(keyPath, "utf8")) as ServiceAccountJson;
-    console.log("✅ Using Firebase service account from file");
+    logger.info("Firebase service account loaded", {
+      event: "firebaseAdmin.credentialLoaded",
+      source: "file",
+    });
     return parsed;
   } catch (error) {
-    console.error(
-      "❌ No Firebase credentials found (env var or file):",
-      (error as Error).message,
-    );
+    reportError("No Firebase credentials found (env var or file)", error, {
+      event: "firebaseAdmin.credentialMissing",
+    });
     throw new Error(
       "Firebase service account not configured. On a cloud host set FIREBASE_SERVICE_ACCOUNT_BASE64; locally provide service-account-key.json at the repo root.",
     );

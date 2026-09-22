@@ -22,12 +22,14 @@ import {
   getAttendanceSessionJoinMap,
 } from "@/lib/server/socket-io";
 import {
+  currentIdentity,
   installSocketAuth,
   loadChatForParticipant,
   loadSessionForMember,
   registerReauthHandler,
   requireIdentity,
 } from "@/server/socket-auth";
+import { reportError } from "@/lib/server/logger";
 
 type SessionPayload =
   | string
@@ -145,7 +147,10 @@ export function registerSocketHandlers(io: Server): void {
           });
         }
       } catch (error) {
-        console.error("Attendance join tracking error:", (error as Error).message);
+        reportError("Attendance join tracking error", error, {
+          event: "socket.attendanceJoinFailed",
+          uid: identity.uid,
+        });
       }
     });
 
@@ -295,7 +300,11 @@ export function registerSocketHandlers(io: Server): void {
           messageId: messageRef.id,
         });
       } catch (error) {
-        console.error("Error sending message:", error);
+        // `identity` is scoped to the try block; read it from the socket.
+        reportError("Error sending chat message", error, {
+          event: "socket.sendMessageFailed",
+          uid: currentIdentity(socket)?.uid,
+        });
         socket.emit("message_error", {
           error: "Failed to send message",
         });

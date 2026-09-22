@@ -13,6 +13,9 @@
 //   KEEP_ALIVE_TZ_OFFSET_MIN  minutes ahead of UTC for the daily window
 //                             (default 330 = IST, Asia/Kolkata)
 
+
+import { logger } from "./logger";
+
 const START_DATE = String(process.env.KEEP_ALIVE_START || "2026-09-16").trim();
 const TOTAL_DAYS = Number(process.env.KEEP_ALIVE_DAYS) || 5;
 const TZ_OFFSET_MIN = Number(process.env.KEEP_ALIVE_TZ_OFFSET_MIN) || 330;
@@ -181,11 +184,17 @@ const resolveSelfUrl = (): string => {
 export function startKeepAliveScheduler(): void {
   const baseUrl = resolveSelfUrl();
   if (!baseUrl) {
-    console.log("Keep-alive scheduler disabled (no KEEP_ALIVE_URL/RENDER_EXTERNAL_URL).");
+    logger.info("Keep-alive scheduler disabled (no KEEP_ALIVE_URL/RENDER_EXTERNAL_URL)", {
+      event: "scheduler.disabled",
+      scheduler: "keep-alive",
+    });
     return;
   }
   if (computeStatus().expired) {
-    console.log("Keep-alive period already over; scheduler not started.");
+    logger.info("Keep-alive period already over; scheduler not started", {
+      event: "scheduler.disabled",
+      scheduler: "keep-alive",
+    });
     return;
   }
 
@@ -195,11 +204,19 @@ export function startKeepAliveScheduler(): void {
       telemetry.pingCount += 1;
       telemetry.lastPingAt = new Date().toISOString();
       telemetry.lastPingStatus = res.status;
-      console.log(`Keep-alive ping #${telemetry.pingCount} -> ${res.status} at ${telemetry.lastPingAt}`);
+      logger.debug("Keep-alive ping", {
+        event: "keepAlive.ping",
+        pingCount: telemetry.pingCount,
+        status: res.status,
+      });
     } catch (error) {
       const message = (error as Error).message;
       telemetry.lastPingStatus = `error: ${message}`;
-      console.error(`Keep-alive ping failed (attempt ${attempt}):`, message);
+      logger.warn("Keep-alive ping failed", {
+        event: "keepAlive.pingFailed",
+        attempt,
+        err: { name: "KeepAlivePingError", message },
+      });
       // One 15-minute idle gap puts the service to sleep, so retry quickly.
       if (attempt < 3) setTimeout(() => ping(attempt + 1), 60 * 1000);
     }
@@ -209,7 +226,10 @@ export function startKeepAliveScheduler(): void {
     const status = computeStatus();
     if (status.expired) {
       clearInterval(timer);
-      console.log("Keep-alive period ended; scheduler stopped for good.");
+      logger.info("Keep-alive period ended; scheduler stopped for good", {
+        event: "scheduler.stopped",
+        scheduler: "keep-alive",
+      });
       return;
     }
     if (!status.active) return; // outside 07:00-23:45 — let Render sleep
@@ -219,7 +239,12 @@ export function startKeepAliveScheduler(): void {
   const timer = setInterval(tick, PING_INTERVAL_MS);
   setTimeout(tick, 45 * 1000); // first ping shortly after boot (e.g. the 7 AM wake-up)
   telemetry.schedulerArmed = true;
-  console.log(
-    `Keep-alive scheduler started: ping every 14 min, 07:00-23:45 IST, ${TOTAL_DAYS} days from ${START_DATE}, target ${baseUrl}`,
-  );
+  logger.info("Keep-alive scheduler started", {
+    event: "scheduler.started",
+    scheduler: "keep-alive",
+    intervalMinutes: 14,
+    window: "07:00-23:45 IST",
+    totalDays: TOTAL_DAYS,
+    startDate: START_DATE,
+  });
 }

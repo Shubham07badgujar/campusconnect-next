@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import adminApp, { FieldValue } from "@/lib/server/firebase-admin";
 import { requireAdmin } from "@/lib/server/auth-guards";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -111,7 +112,9 @@ export async function POST(req: NextRequest) {
       skippedCount: skippedCount,
     });
   } catch (error: any) {
-    console.error("Save exam timetable error:", error);
+    reportError("Save exam timetable error", error, {
+      route: "/api/save-exam-timetable",
+    });
     return NextResponse.json(
       {
         message: "Failed to save exam timetable",

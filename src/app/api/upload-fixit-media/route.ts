@@ -5,6 +5,7 @@ import {
   isAllowedByLegacyUploadFilter,
   LEGACY_UPLOAD_FILTER_ERROR_MESSAGE,
 } from "@/lib/server/file-text";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -87,7 +88,9 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("FixIt media upload error:", error);
+    reportError("FixIt media upload error", error, {
+      route: "/api/upload-fixit-media",
+    });
     return NextResponse.json(
       {
         message: "Failed to upload FixIt media",

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import adminApp from "@/lib/server/firebase-admin";
 import { requireAdmin } from "@/lib/server/auth-guards";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -25,7 +26,9 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Error setting teacher role:", error);
+    reportError("Error setting teacher role", error, {
+      route: "/api/teachers/set-role",
+    });
     return NextResponse.json(
       {
         message: "Failed to set teacher role",

@@ -14,6 +14,7 @@ import {
 } from "@/lib/server/passwords";
 import { sendMail } from "@/lib/server/mailer";
 import { buildExistingStudentIndex } from "@/lib/server/onboarding";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -217,7 +218,9 @@ export async function POST(req: NextRequest) {
             });
             credentialsSentCount += 1;
           } catch (mailError: any) {
-            console.error("Credential email failed:", mailError.message);
+            reportError("Credential email failed", mailError.message, {
+              route: "/api/admin/bulk-onboard-students",
+            });
             manualCredentialEntries.push({
               name,
               prn,

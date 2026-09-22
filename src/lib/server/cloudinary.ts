@@ -1,4 +1,5 @@
 import { v2 as cloudinary, type UploadApiOptions, type UploadApiResponse } from "cloudinary";
+import { logger } from "./logger";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -11,7 +12,9 @@ if (
   !process.env.CLOUDINARY_API_KEY ||
   !process.env.CLOUDINARY_API_SECRET
 ) {
-  console.warn("⚠️ Cloudinary environment variables are not fully configured.");
+  logger.warn("Cloudinary environment variables are not fully configured", {
+    event: "cloudinary.notConfigured",
+  });
 }
 
 export { cloudinary };

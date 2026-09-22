@@ -5,6 +5,7 @@ import { generateSecurePassword } from "@/lib/server/passwords";
 import { sendMail } from "@/lib/server/mailer";
 import { getSubjectSetsMap } from "@/lib/server/subject-sets";
 import { buildStudentProfile, writeStudentProfile } from "@/lib/server/students";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -136,7 +137,7 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Failed to create student:", error);
+    reportError("Failed to create student", error, { route: "/api/users" });
     return NextResponse.json(
       { message: "Failed to create student." },
       { status: 500 },
@@ -256,7 +257,7 @@ export async function PUT(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Failed to update student:", error);
+    reportError("Failed to update student", error, { route: "/api/users" });
     return NextResponse.json(
       { message: "Failed to update student." },
       { status: 500 },

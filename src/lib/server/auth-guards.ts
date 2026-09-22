@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { auth as adminAuth, firestore as adminFirestore } from "firebase-admin";
 import adminApp from "@/lib/server/firebase-admin";
+import { reportError } from "./logger";
 
 export type DecodedToken = adminAuth.DecodedIdToken;
 
@@ -64,10 +65,9 @@ const authenticate = async (
     if (isInvalidTokenError(err)) {
       return fail(401, "Invalid or expired authorization token");
     }
-    console.error(
-      "Firebase Admin SDK unavailable during token verification:",
-      err,
-    );
+    reportError("Firebase Admin SDK unavailable during token verification", err, {
+      event: "auth.adminSdkUnavailable",
+    });
     return fail(503, SERVICE_UNAVAILABLE_MESSAGE);
   }
 };

@@ -11,6 +11,7 @@ import {
   parseExamTimetableFromText,
   parseExamTimetableWithGemini,
 } from "@/lib/server/exam-timetable";
+import { logger, reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -84,9 +85,10 @@ export async function POST(req: NextRequest) {
           structuredBy = "gemini";
         }
       } catch (geminiError: any) {
-        console.warn(
-          `Gemini exam timetable parsing failed, using text fallback parser: ${geminiError.message}`,
-        );
+        logger.warn("Gemini exam timetable parsing failed; using text fallback", {
+          route: "/api/upload-exam-timetable",
+          err: { name: "GeminiParseError", message: String(geminiError?.message) },
+        });
       }
     }
 
@@ -112,7 +114,9 @@ export async function POST(req: NextRequest) {
       message: "File uploaded and text extracted successfully",
     });
   } catch (error: any) {
-    console.error("Exam timetable upload error:", error);
+    reportError("Exam timetable upload error", error, {
+      route: "/api/upload-exam-timetable",
+    });
     return NextResponse.json(
       {
         message: "Failed to process exam timetable",

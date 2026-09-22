@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import adminApp from "@/lib/server/firebase-admin";
 import { requireAdmin } from "@/lib/server/auth-guards";
 import { deleteTeacherDirectory } from "@/lib/server/teacher-directory";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -97,7 +98,9 @@ export async function DELETE(
       { status: 200 },
     );
   } catch (error) {
-    console.error("Failed to delete teacher:", error);
+    reportError("Failed to delete teacher", error, {
+      route: "/api/teachers/[uid]/delete",
+    });
     return NextResponse.json(
       { message: "Failed to delete teacher." },
       { status: 500 },

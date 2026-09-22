@@ -6,6 +6,7 @@ import {
   findNextActiveExamDate,
   formatExamReminderLocalDateISO,
 } from "@/lib/server/exam-reminders";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -38,7 +39,9 @@ export async function POST(req: NextRequest) {
       ...result,
     });
   } catch (error: any) {
-    console.error("Exam reminder trigger failed:", error);
+    reportError("Exam reminder trigger failed", error, {
+      route: "/api/notifications/exam-reminders/trigger",
+    });
     return NextResponse.json(
       {
         message: "Failed to trigger exam reminders",

@@ -16,6 +16,7 @@ import {
 } from "@/lib/server/users";
 import { allocateFreeTeacherId } from "@/lib/server/teacher-ids";
 import { writeTeacherDirectory } from "@/lib/server/teacher-directory";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -155,7 +156,9 @@ export async function PUT(
       });
       await adminApp.auth().setCustomUserClaims(uid, { teacher: true });
     } catch (authError) {
-      console.error("Teacher auth update warning:", (authError as Error).message);
+      reportError("Teacher auth update warning", (authError as Error).message, {
+        route: "/api/teachers/[uid]",
+      });
     }
 
     return NextResponse.json(
@@ -172,7 +175,7 @@ export async function PUT(
       { status: 200 },
     );
   } catch (error) {
-    console.error("Error updating teacher:", error);
+    reportError("Error updating teacher", error, { route: "/api/teachers/[uid]" });
     return NextResponse.json(
       { message: (error as Error).message },
       { status: 500 },

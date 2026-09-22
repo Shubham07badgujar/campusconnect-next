@@ -6,6 +6,7 @@ import {
   isAllowedByLegacyUploadFilter,
   LEGACY_UPLOAD_FILTER_ERROR_MESSAGE,
 } from "@/lib/server/file-text";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -113,7 +114,9 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     );
   } catch (error: any) {
-    console.error("Exam timetable PDF upload error:", error);
+    reportError("Exam timetable PDF upload error", error, {
+      route: "/api/upload-exam-timetable-pdf",
+    });
     return NextResponse.json(
       {
         message: "Failed to upload exam timetable PDF",

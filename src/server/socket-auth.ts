@@ -11,6 +11,7 @@
 // and nothing else. Client-supplied senderId / userId / role fields are ignored.
 import type { Server, Socket } from "socket.io";
 import adminApp from "@/lib/server/firebase-admin";
+import { reportError } from "@/lib/server/logger";
 
 /** Verified identity attached to every connected socket. Never client-supplied. */
 export type SocketIdentity = {
@@ -79,10 +80,9 @@ export const installSocketAuth = (io: Server): void => {
       }
       // Admin SDK unavailable — reject rather than fall open, but say so
       // distinctly so a misconfigured deploy is diagnosable.
-      console.error(
-        "Socket auth unavailable:",
-        (error as Error)?.message ?? String(error),
-      );
+      reportError("Socket auth unavailable", error, {
+        event: "socket.authUnavailable",
+      });
       next(new Error(AUTH_UNAVAILABLE));
     }
   });

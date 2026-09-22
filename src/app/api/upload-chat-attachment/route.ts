@@ -5,6 +5,7 @@ import {
   isAllowedByLegacyUploadFilter,
   LEGACY_UPLOAD_FILTER_ERROR_MESSAGE,
 } from "@/lib/server/file-text";
+import { reportError } from "@/lib/server/logger";
 
 export const runtime = "nodejs";
 
@@ -87,7 +88,9 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("Chat attachment upload error:", error);
+    reportError("Chat attachment upload error", error, {
+      route: "/api/upload-chat-attachment",
+    });
     return NextResponse.json(
       {
         message: "Failed to upload chat attachment",
