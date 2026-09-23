@@ -7,7 +7,7 @@
 // Actions workflow at .github/workflows/keep-alive-wake.yml.
 //
 // Config (all optional, defaults below):
-//   KEEP_ALIVE_START        first active day, YYYY-MM-DD (default 2026-09-16)
+//   KEEP_ALIVE_START        first active day, YYYY-MM-DD (default 2026-09-23)
 //   KEEP_ALIVE_DAYS         number of active days           (default 5)
 //   KEEP_ALIVE_URL          public base url to ping         (default RENDER_EXTERNAL_URL)
 //   KEEP_ALIVE_TZ_OFFSET_MIN  minutes ahead of UTC for the daily window
@@ -16,7 +16,7 @@
 
 import { logger } from "./logger";
 
-const START_DATE = String(process.env.KEEP_ALIVE_START || "2026-09-16").trim();
+const START_DATE = String(process.env.KEEP_ALIVE_START || "2026-09-23").trim();
 const TOTAL_DAYS = Number(process.env.KEEP_ALIVE_DAYS) || 5;
 const TZ_OFFSET_MIN = Number(process.env.KEEP_ALIVE_TZ_OFFSET_MIN) || 330;
 const WINDOW_START_MIN = 7 * 60; // 07:00
